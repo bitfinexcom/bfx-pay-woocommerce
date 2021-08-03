@@ -9,23 +9,25 @@
  *
  * @class       WC_Bfx_Pay_Gateway
  * @extends     WC_Payment_Gateway
+ *
  * @version     1.0.0
  */
-
-class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway {
-
+class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
+{
     /**
-     * API Context used for Bitfinex Merchant Authorization
+     * API Context used for Bitfinex Merchant Authorization.
+     *
      * @var null
      */
     public $baseApiUrl = 'https://api.bitfinex.com/';
-    public $api_key;
-    public $api_secret;
+    public $apiKey;
+    public $apiSecret;
 
     /**
      * Constructor for the gateway.
      */
-    public function __construct() {
+    public function __construct()
+    {
         global $woocommerce;
         // Setup general properties.
         $this->setup_properties();
@@ -38,27 +40,27 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway {
         $this->title = $this->get_option('title');
         $this->description = $this->get_option('description');
         $this->instructions = $this->get_option('instructions');
-        $this->button_type = $this->get_option('button_type');
-        $this->baseApiUrl = $this->get_option('base_api_url') ?? $this->baseApiUrl . '/v2/';
-        $this->api_key = $this->get_option('api_key');
-        $this->api_secret = $this->get_option('api_secret') ?? false;
-        $this->check_req_button = $this->get_option('button_req_checkout');
-        $this->pay_currencies = $this->get_option('pay_currencies');
+        $this->buttonType = $this->get_option('button_type');
+        $this->baseApiUrl = $this->get_option('base_api_url') ?? $this->baseApiUrl.'/v2/';
+        $this->apiKey = $this->get_option('api_key');
+        $this->apiSecret = $this->get_option('api_secret') ?? false;
+        $this->checkReqButton = $this->get_option('button_req_checkout');
+        $this->payCurrencies = $this->get_option('pay_currencies');
         $this->duration = $this->get_option('duration') ?? 86399;
 
         // Checking which button theme selected and outputing relevated.
-        $this->icon = ('Light' === $this->button_type) ? apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-white.svg', __FILE__)) : apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-dark.svg', __FILE__));
+        $this->icon = ('Light' === $this->buttonType) ? apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-white.svg', __FILE__)) : apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-dark.svg', __FILE__));
         add_action('woocommerce_update_options_payment_gateways_'.$this->id, [$this, 'process_admin_options']);
         add_filter('woocommerce_payment_complete_order_status', [$this, 'change_payment_complete_order_status'], 10, 3);
         // Customer Emails.
         add_action('woocommerce_email_before_order_table', [$this, 'email_instructions'], 10, 3);
         add_action('woocommerce_api_bitfinex', [$this, 'webhook']);
         // Cron
-        add_filter('cron_schedules', 'cron_add_five_min');
-        function cron_add_five_min($schedules)
+        add_filter('cron_schedules', 'cron_add_fifteen_min');
+        function cron_add_fifteen_min($schedules)
         {
-            $schedules['five_min'] = [
-                'interval' => 60 * 5,
+            $schedules['fifteen_min'] = [
+                'interval' => 60 * 15,
                 'display' => 'Bitfinex cron',
             ];
 
@@ -68,30 +70,38 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway {
         add_action('wp', 'bitfinex_cron_activation');
         function bitfinex_cron_activation()
         {
-            if (!wp_next_scheduled('bitfinex_five_min_event')) {
-                wp_schedule_event(time(), 'five_min', 'bitfinex_five_min_event');
+            if (!wp_next_scheduled('bitfinex_fifteen_min_event')) {
+                wp_schedule_event(time(), 'fifteen_min', 'bitfinex_fifteen_min_event');
             }
         }
 
-        add_action('bitfinex_five_min_event', 'cron_invoice_check');
+        add_action('bitfinex_fifteen_min_event', 'cron_invoice_check');
+
+        $baseUrl = $this->baseApiUrl;
+        $this->client = new GuzzleHttp\Client([
+            'base_uri' => $baseUrl,
+            'timeout' => 3.0,
+        ]);
     }
 
     /**
      * Setup general properties for the gateway.
      */
-    protected function setup_properties() {
+    protected function setup_properties()
+    {
         $this->id = 'bfx_payment';
-        $this->icon = apply_filters( 'woocommerce_bfx_icon', plugins_url( '../assets/img/bfx-pay-white.svg' , __FILE__) );
-        $this->method_title = __( 'Bitfinex Payment', 'bfx-pay-woocommerce' );
-        $this->method_description = __( 'Bitfinex Payment', 'bfx-pay-woocommerce' );
+        $this->icon = apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-white.svg', __FILE__));
+        $this->method_title = __('Bitfinex Payment', 'bfx-pay-woocommerce');
+        $this->method_description = __('Bitfinex Payment', 'bfx-pay-woocommerce');
         $this->has_fields = true;
-        $this->debug = ( 'yes' === $this->get_option( 'debug' ) );
+        $this->debug = ('yes' === $this->get_option('debug'));
     }
 
     /**
      * Initialise Gateway Settings Form Fields.
      */
-    public function init_form_fields() {
+    public function init_form_fields()
+    {
         $this->form_fields = [
             'enabled' => [
                 'title' => __('Enable/Disable', 'bfx-pay-woocommerce'),
@@ -208,18 +218,19 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway {
     /**
      * Getting Gateway icon uri.
      */
-    public function get_icon_uri() {
-        $selected_icon = ('Light' === $this->button_type) ? plugin_dir_url(__FILE__)
-            .'../assets/img/bfx-pay-white.svg' : plugin_dir_url(__FILE__)
-            .'../assets/img/bfx-pay-dark.svg';
-
-        return $selected_icon;
+    public function get_icon_uri()
+    {
+        $bfxImgPath = plugin_dir_url(__FILE__).'../assets/img/';
+        $bfxPayWhite = $bfxImgPath.'bfx-pay-white.svg';
+        $bfxPayDark = $bfxImgPath.'bfx-pay-dark.svg';
+        return ('Light' === $this->buttonType) ? $bfxPayWhite : $bfxPayDark;
     }
 
     /**
      * Initialise Gateway Settings Form Fields.
      */
-    public function payment_fields() {
+    public function payment_fields()
+    {
         global $woocommerce;
         $order = new WC_Order($order_id);
         echo wpautop(wp_kses_post($this->description));
@@ -228,30 +239,27 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway {
     /**
      * Process the payment and return the result.
      *
-     * @param int $order_id Order ID.
+     * @param int $order_id order ID
+     *
      * @return array
+     *
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    function process_payment( $order_id ) {
+    public function process_payment($order_id)
+    {
         global $woocommerce;
         $order = new WC_Order($order_id);
-        $baseUrl = $this->baseApiUrl;
+        $res = $this->client->request('GET', 'https://api-pub.bitfinex.com/v2/platform/status');
 
-        $client = new GuzzleHttp\Client([
-            'base_uri' => $baseUrl,
-            'timeout' => 3.0,
-        ]);
-
-        $res = $client->request('GET', 'https://api-pub.bitfinex.com/v2/platform/status');
-        if ($res->getBody()!=1){
+        if (1 != $res->getBody()) {
             throw new Exception(sprintf('This payment method is currently unavailable. Try again later or choose another one'));
         }
-        $apiKey = $this->api_key;
-        $apiSecret = $this->api_secret;
+        $apiKey = $this->apiKey;
+        $apiSecret = $this->apiSecret;
         $url = $this->get_return_url($order);
         $hook = get_site_url().'?wc-api=bitfinex';
         $totalSum = $order->get_total();
-        $pay_currencies = $this->get_option('pay_currencies');
+        $payCurrencies = $this->get_option('pay_currencies');
         $currency = $this->get_option('currency');
         $duration = $this->get_option('duration');
         $apiPath = 'v2/auth/w/ext/pay/invoice/create';
@@ -259,7 +267,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway {
         $body = [
             'amount' => $totalSum,
             'currency' => $currency[0],
-            'payCurrencies' => $pay_currencies,
+            'payCurrencies' => $payCurrencies,
             'orderId' => "$order_id",
             'duration' => intval($duration),
             'webhook' => $hook,
@@ -289,7 +297,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway {
         ];
 
         try {
-            $r = $client->post($apiPath, [
+            $r = $this->client->post($apiPath, [
                 'headers' => $headers,
                 'body' => $bodyJson,
             ]);
@@ -323,78 +331,84 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway {
     }
 
     /**
-     * cron_invoice_check
+     * cron_invoice_check.
      */
-    public function cron_invoice_check() {
-        $baseUrl = $this->baseApiUrl;
-        $client = new GuzzleHttp\Client([
-            'base_uri' => $baseUrl,
-            'timeout' => 3.0,
-        ]);
+    public function cron_invoice_check()
+    {
         $apiPathin = 'v2/auth/r/ext/pay/invoices';
-        $apiKey = $this->api_key;
-        $apiSecret = $this->api_secret;
+        $apiKey = $this->apiKey;
+        $apiSecret = $this->apiSecret;
         $nonce = (string) (time() * 1000 * 1000); // epoch in ms * 1000
-        $bodyin = [
-            'start' => round(microtime(true) * 1000) - 5 * 60000,
-            'end' => round(microtime(true) * 1000),
-            'limit' => 100,
-        ];
-        $bodyJsonin = json_encode($bodyin, JSON_UNESCAPED_SLASHES);
-        $signaturein = "/api/{$apiPathin}{$nonce}{$bodyJsonin}";
-        $sigin = hash_hmac('sha384', $signaturein, $apiSecret);
-        $headersin = [
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-            'bfx-nonce' => $nonce,
-            'bfx-apikey' => $apiKey,
-            'bfx-signature' => $sigin,
-        ];
-        try {
-            $rin = $client->post($apiPathin, [
-                'headers' => $headersin,
-                'body' => $bodyJsonin,
-            ]);
-            $responsein = $rin->getBody()->getContents();
-            if ($this->debug) {
-                wc_add_notice($responsein, 'notice');
-            }
-            $datain = json_decode($responsein);
-            foreach ($datain as $invoice) {
-                $order = wc_get_order($invoice->orderId);
-                if ($order === false) {
-                    continue;
+        $now = round(microtime(true) * 1000);
+        $end = $now;
+        while ($end > $now - (60 * 60000) * 25) {
+            $start = $end - (60 * 60000) * 2;
+            $bodyin = [
+                'start' => $start,
+                'end' => $end,
+                'limit' => 100,
+            ];
+            $bodyJsonin = json_encode($bodyin, JSON_UNESCAPED_SLASHES);
+            $signaturein = "/api/{$apiPathin}{$nonce}{$bodyJsonin}";
+            $sigin = hash_hmac('sha384', $signaturein, $apiSecret);
+            $headersin = [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'bfx-nonce' => $nonce,
+                'bfx-apikey' => $apiKey,
+                'bfx-signature' => $sigin,
+            ];
+            try {
+                $rin = $this->client->post($apiPathin, [
+                    'headers' => $headersin,
+                    'body' => $bodyJsonin,
+                ]);
+                $responsein = $rin->getBody()->getContents();
+                if ($this->debug) {
+                    wc_add_notice($responsein, 'notice');
                 }
-                if ($order->get_status() === 'on-hold') {
-                    if ($invoice->status === 'COMPLETED') {
-                        $order->payment_complete();
-                    } else {
-                        $order->update_status('failed');
+                $datain = json_decode($responsein);
+                foreach ($datain as $invoice) {
+                    $order = wc_get_order($invoice->orderId);
+                    if (false === $order) {
+                        continue;
+                    }
+                    if ('on-hold' === $order->get_status()) {
+                        if ('COMPLETED' === $invoice->status) {
+                            $order->payment_complete();
+                        } elseif ('PENDING' === $invoice->status) {
+                            $order->update_status('on-hold');
+                        } else {
+                            $order->update_status('failed');
+                        }
                     }
                 }
+            } catch (\Throwable $exin) {
+                print_r($exin->getMessage());
             }
-        } catch (\Throwable $exin) {
-            print_r($exin->getMessage());
+            $end -= (60 * 60000) * 2;
         }
     }
 
     /**
-     * Webhook
+     * Webhook.
      */
-    public function webhook() {
+    public function webhook()
+    {
         if (!isset($_SERVER['REQUEST_METHOD']) || 'POST' !== $_SERVER['REQUEST_METHOD']) {
             return;
         }
         $payload = file_get_contents('php://input');
         $data = json_decode($payload, true);
+        $order = wc_get_order($data['orderId']);
         if ('COMPLETED' !== $data['status']) {
             $order->update_status('failed');
+
             return;
         }
         ob_start();
-        $order = wc_get_order($data['orderId']);
-        $order->payment_complete();
 
+        $order->payment_complete();
         $to = $order->get_billing_email();
         $subject = 'Payment BFX';
         define('WP_USE_THEMES', false);
@@ -403,12 +417,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway {
         $headers = 'MIME-Version: 1.0'."\r\n";
         $headers .= "Content-type: text/html; charset=UTF-8 \r\n";
         $invoice = $data['invoices'][0];
-        $matches = [];
-        preg_match('/"invoices":.*?]/', $payload, $matches);
-        $rawInvoices = $matches[0];
-        preg_match('/"amount":(.*?),"/', $rawInvoices, $matches);
-        $amount = $matches[1];
-
+        $amount = $invoice['amount'];
+        $amount = preg_replace('/0+$/', '', sprintf('%.10f', $amount));
         $name = $order->get_billing_first_name();
         $orderId = $order->get_id();
         $date = $order->get_date_paid();
@@ -445,12 +455,14 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway {
     /**
      * Change payment complete order status to completed for Вitfinex payments method orders.
      *
-     * @param  string         $status Current order status.
-     * @param  int            $order_id Order ID.
-     * @param  WC_Order|false $order Order object.
+     * @param string         $status   current order status
+     * @param int            $order_id order ID
+     * @param WC_Order|false $order    order object
+     *
      * @return string
      */
-    public function change_payment_complete_order_status( $status, $order_id = 0, $order = false ) {
+    public function change_payment_complete_order_status($status, $order_id = 0, $order = false)
+    {
         if ($order && 'bfx_payment' === $order->get_payment_method()) {
             $status = 'completed';
         }
@@ -461,17 +473,19 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway {
     /**
      * Add content to the WC emails.
      *
-     * @param WC_Order $order Order object.
-     * @param bool     $sent_to_admin  Sent to admin.
-     * @param bool     $plain_text Email format: plain text or HTML.
+     * @param WC_Order $order         order object
+     * @param bool     $sent_to_admin sent to admin
+     * @param bool     $plain_text    email format: plain text or HTML
      */
-    public function email_instructions( $order, $sent_to_admin, $plain_text = false ) {
+    public function email_instructions($order, $sent_to_admin, $plain_text = false)
+    {
         if ($this->instructions && !$sent_to_admin && $this->id === $order->get_payment_method()) {
             echo wp_kses_post(wpautop(wptexturize($this->instructions)).PHP_EOL);
         }
     }
 
-    static function htmlEmailTemplate($name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $count, $productName, $invoice, $amount) {
+    public static function htmlEmailTemplate($name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $count, $productName, $invoice, $amount)
+    {
         $message = '
 <table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%">
                 <tbody><tr>

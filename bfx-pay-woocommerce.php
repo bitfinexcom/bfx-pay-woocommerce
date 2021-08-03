@@ -28,39 +28,43 @@ add_action('wp_mail_failed', 'log_mailer_errors', 10, 1);
 
 add_filter('woocommerce_payment_gateways', 'add_to_woo_bfx_payment_gateway');
 
-function bfx_pay_woocommerce_init() {
+function bfx_pay_woocommerce_init()
+{
     if (class_exists('WC_Payment_Gateway')) {
         require_once __DIR__.'/vendor/autoload.php';
         require_once __DIR__.'/includes/class-wc-bfx-pay-gateway.php';
     }
 }
 
-function add_to_woo_bfx_payment_gateway( $gateways ) {
+function add_to_woo_bfx_payment_gateway($gateways)
+{
     $gateways[] = 'WC_Bfx_Pay_Gateway';
 
     return $gateways;
 }
 
-function buy_checkout_on_archive(){
+function buy_checkout_on_archive()
+{
     if (class_exists('WC_Bfx_Pay_Gateway')) {
         global $product;
         $instance = new WC_Bfx_Pay_Gateway();
         $icon = $instance->get_icon_uri();
-        $check_button = ('yes' === $instance->check_req_button) ? true : false;
+        $checkButton = ('yes' === $instance->checkReqButton) ? true : false;
 
-        if ($check_button) {
+        if ($checkButton) {
             if ($product->is_type('simple')) {
-                $product_id = $product->get_id();
-                $button_url = '?addtocart='.$product_id;
-                $button_class = 'button loop-checkout-btn';
+                $productId = $product->get_id();
+                $buttonUrl = '?addtocart='.$productId;
+                $buttonClass = 'button loop-checkout-btn';
 
-                echo '<a href="'.$button_url.'" class="'.$button_class.'"><img src="'.$icon.'" alt="" width="110" style="margin-bottom: 0;"></a>';
+                echo '<a href="'.$buttonUrl.'" class="'.$buttonClass.'"><img src="'.$icon.'" alt="" width="110" style="margin-bottom: 0;"></a>';
             }
         }
     }
 }
 
-function addtocart_on_archives_redirect_checkout() {
+function addtocart_on_archives_redirect_checkout()
+{
     if (isset($_GET['addtocart']) && $_GET['addtocart'] > 0) {
         WC()->cart->empty_cart();
         WC()->cart->add_to_cart(intval($_GET['addtocart']));
