@@ -41,7 +41,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $this->description = $this->get_option('description');
         $this->instructions = $this->get_option('instructions');
         $this->buttonType = $this->get_option('button_type');
-        $this->baseApiUrl = $this->get_option('base_api_url') ?? $this->baseApiUrl.'/v2/';
+        $this->baseApiUrl = $this->get_option('base_api_url') ?? $this->baseApiUrl;
         $this->apiKey = $this->get_option('api_key');
         $this->apiSecret = $this->get_option('api_secret') ?? false;
         $this->checkReqButton = $this->get_option('button_req_checkout');
@@ -133,7 +133,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 'title' => __('Api url', 'bfx-pay-woocommerce'),
                 'type' => 'text',
                 'default' => '',
-                'description' => __('By default it is "https://api.bitfinex.com/v2/"', 'bfx-pay-woocommerce'),
+                'description' => __('By default it is "https://api.bitfinex.com/"', 'bfx-pay-woocommerce'),
                 'desc_tip' => true,
             ],
             'redirect_url' => [
@@ -249,7 +249,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     {
         global $woocommerce;
         $order = new WC_Order($order_id);
-        $res = $this->client->request('GET', 'https://api-pub.bitfinex.com/v2/platform/status');
+        $res = $this->client->get('v2/platform/status');
 
         if (1 != $res->getBody()) {
             throw new Exception(sprintf('This payment method is currently unavailable. Try again later or choose another one'));
