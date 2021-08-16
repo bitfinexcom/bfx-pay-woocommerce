@@ -56,32 +56,35 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         add_action('woocommerce_email_before_order_table', [$this, 'email_instructions'], 10, 3);
         add_action('woocommerce_api_bitfinex', [$this, 'webhook']);
         // Cron
-        add_filter('cron_schedules', 'cron_add_fifteen_min');
-        function cron_add_fifteen_min($schedules)
-        {
-            $schedules['fifteen_min'] = [
-                'interval' => 60 * 15,
-                'display' => 'Bitfinex cron',
-            ];
-
-            return $schedules;
-        }
-
-        add_action('wp', 'bitfinex_cron_activation');
-        function bitfinex_cron_activation()
-        {
-            if (!wp_next_scheduled('bitfinex_fifteen_min_event')) {
-                wp_schedule_event(time(), 'fifteen_min', 'bitfinex_fifteen_min_event');
-            }
-        }
-
-        add_action('bitfinex_fifteen_min_event', 'cron_invoice_check');
+        add_filter('cron_schedules', [$this, 'cron_add_fifteen_min']);
+        add_action('wp', [$this, 'bitfinex_cron_activation']);
+        add_action('bitfinex_fifteen_min_event', [$this, 'cron_invoice_check']);
 
         $baseUrl = $this->baseApiUrl;
         $this->client = new GuzzleHttp\Client([
             'base_uri' => $baseUrl,
             'timeout' => 3.0,
         ]);
+    }
+
+    /**
+     * Cron.
+     */
+    function cron_add_fifteen_min($schedules)
+    {
+        $schedules['fifteen_min'] = [
+            'interval' => 60 * 15,
+            'display' => 'Bitfinex cron',
+        ];
+
+        return $schedules;
+    }
+
+    function bitfinex_cron_activation()
+    {
+        if (!wp_next_scheduled('bitfinex_fifteen_min_event')) {
+            wp_schedule_event(time(), 'fifteen_min', 'bitfinex_fifteen_min_event');
+        }
     }
 
     /**
