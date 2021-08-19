@@ -70,7 +70,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     /**
      * Cron.
      */
-    function cron_add_fifteen_min($schedules)
+    public function cron_add_fifteen_min($schedules)
     {
         $schedules['fifteen_min'] = [
             'interval' => 60 * 15,
@@ -80,7 +80,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         return $schedules;
     }
 
-    function bitfinex_cron_activation()
+    public function bitfinex_cron_activation()
     {
         if (!wp_next_scheduled('bitfinex_fifteen_min_event')) {
             wp_schedule_event(time(), 'fifteen_min', 'bitfinex_fifteen_min_event');
@@ -196,6 +196,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                     'BTC' => 'BTC',
                     'ETH' => 'ETH',
                     'UST-ETH' => 'UST-ETH',
+                    'UST-TRX' => 'UST-TRX',
+                    'LNX' => 'LNX',
                 ],
             ],
             'currency' => [
@@ -226,6 +228,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $bfxImgPath = plugin_dir_url(__FILE__).'../assets/img/';
         $bfxPayWhite = $bfxImgPath.'bfx-pay-white.svg';
         $bfxPayDark = $bfxImgPath.'bfx-pay-dark.svg';
+
         return ('Light' === $this->buttonType) ? $bfxPayWhite : $bfxPayDark;
     }
 
@@ -329,7 +332,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         // Return thankyou redirect
         return [
             'result' => 'success',
-            'redirect' => $this->get_option('redirect_url') . $data->id,
+            'redirect' => $this->get_option('redirect_url').$data->id,
         ];
     }
 
