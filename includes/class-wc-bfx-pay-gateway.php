@@ -57,6 +57,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         add_action('woocommerce_api_bitfinex', [$this, 'webhook']);
         // Cron
         add_filter('cron_schedules', [$this, 'cron_add_fifteen_min']);
+        add_filter('woocommerce_add_error', [$this, 'woocommerce_add_error']);
         add_action('wp', [$this, 'bitfinex_cron_activation']);
         add_action('bitfinex_fifteen_min_event', [$this, 'cron_invoice_check']);
 
@@ -66,7 +67,12 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             'timeout' => 3.0,
         ]);
     }
-
+    function woocommerce_add_error( $error ) {
+        if (strpos($error,'500') !== false) {
+            $error = '500 Internal Server Error';
+        }
+        return $error;
+    }
     /**
      * Cron.
      */
@@ -209,9 +215,11 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 ],
             ],
             'duration' => [
-                'title' => __('Duration', 'bfx-pay-woocommerce'),
+                'title' => __('Duration: sec', 'bfx-pay-woocommerce'),
+                'label' => __('sec', 'bfx-pay-woocommerce'),
                 'type' => 'number',
                 'default' => '86399',
+                'custom_attributes' => ['step' => 'any', 'min' => '0'],
                 'desc_tip' => true,
                 'description' => __('This controls the duration.', 'bfx-pay-woocommerce'),
             ],
@@ -307,6 +315,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             $response = $r->getBody()->getContents();
             if ($this->debug) {
                 wc_add_notice($response, 'notice');
+                $logger = wc_get_logger();
+                $logger->info(wc_print_r($response, true), ['source' => 'bfx-pay-woocommerce']);
             }
         } catch (\Throwable $ex) {
             wc_add_notice($ex->getMessage(), 'error');
@@ -369,6 +379,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 $responsein = $rin->getBody()->getContents();
                 if ($this->debug) {
                     wc_add_notice($responsein, 'notice');
+                    $logger = wc_get_logger();
+                    $logger->info(wc_print_r($responsein, true), ['source' => 'bfx-pay-woocommerce']);
                 }
                 $datain = json_decode($responsein);
                 foreach ($datain as $invoice) {
@@ -431,10 +443,6 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $total = $order->get_order_item_totals();
         $address = $order->get_formatted_billing_address();
         $product = $order->get_items();
-        foreach ($product as $item) {
-            $productName = $item['name'];
-            $count = $item['quantity'];
-        }
 
         $file = plugin_dir_path(__FILE__).'../assets/img/bfx-pay-white.png';
         $uid = 'bfx-pay-white';
@@ -446,9 +454,13 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             $phpmailer->AddEmbeddedImage($file, $uid, $name);
         });
 
-        wp_mail($to, $subject, self::htmlEmailTemplate($name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $count, $productName, $invoice, $amount), $headers);
+        wp_mail($to, $subject, self::htmlEmailTemplate($name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $product, $invoice, $amount), $headers);
 
-        update_option('webhook_debug', $_POST);
+        if ($this->debug) {
+            update_option('webhook_debug', $_POST);
+            $logger = wc_get_logger();
+            $logger->info(wc_print_r($_POST, true), ['source' => 'bfx-pay-woocommerce']);
+        }
         ob_clean();
         status_header(200);
         echo 'true';
@@ -487,7 +499,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         }
     }
 
-    public static function htmlEmailTemplate($name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $count, $productName, $invoice, $amount)
+    public static function htmlEmailTemplate($name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $product, $invoice, $amount)
     {
         $message = '
 <table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%">
@@ -542,12 +554,19 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             </tr>
         </thead>
         <tbody>
+        <?php
+        foreach ($product as $item) {
+        ?>
                 <tr>
-        <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif;word-wrap:break-word">'.$productName.'</td>
-        <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">'.$count.'</td>
+                <?php ?>
+        <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif;word-wrap:break-word">'.$item['name'].'</td>
+        <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">'.$item['quantity'].'</td>
         <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">
-            <span>'.$subtotal['cart_subtotal']['value'].'</span>        </td>
+            <span>'.$item['price'].'</span>        </td>
     </tr>
+    <?php
+    }
+    ?>
             <tr>
                         <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left;border-top-width:4px">Subtotal</th>
                         <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left;border-top-width:4px"><span>'.$subtotal['cart_subtotal']['value'].'</span></td>
