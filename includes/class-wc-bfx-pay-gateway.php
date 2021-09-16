@@ -67,12 +67,16 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             'timeout' => 3.0,
         ]);
     }
-    function woocommerce_add_error( $error ) {
-        if (strpos($error,'500') !== false) {
+
+    public function woocommerce_add_error($error)
+    {
+        if (false !== strpos($error, '500')) {
             $error = '500 Internal Server Error';
         }
+
         return $error;
     }
+
     /**
      * Cron.
      */
