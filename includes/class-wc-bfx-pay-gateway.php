@@ -70,8 +70,15 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 
     public function woocommerce_add_error($error)
     {
-        if (false !== strpos($error, '500')) {
-            $error = '500 Internal Server Error';
+        $errPos = strpos($error, '["error",null,"ERR_PAY');
+        if (false !== $errPos) {
+            $bracketPos = strpos($error, ']', $errPos);
+
+            if (false !== $bracketPos) {
+                $errJson = json_decode(substr($error, $errPos, $bracketPos), true);
+
+                return 'Bitfinex invoice creation failed with reason: '.$errJson[2];
+            }
         }
 
         return $error;
@@ -323,7 +330,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             if ($this->debug) {
                 wc_add_notice($response, 'notice');
                 $logger = wc_get_logger();
-                $logger->info(wc_print_r($response, true), ['source' => 'bfx-pay-woocommerce']);
+                $logger->info('CREATE INVOICE CALL >> '.wc_print_r($response, true), ['source' => 'bfx-pay-woocommerce']);
             }
         } catch (\Throwable $ex) {
             wc_add_notice($ex->getMessage(), 'error');
@@ -387,7 +394,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 if ($this->debug) {
                     wc_add_notice($responsein, 'notice');
                     $logger = wc_get_logger();
-                    $logger->info(wc_print_r($responsein, true), ['source' => 'bfx-pay-woocommerce']);
+                    $logger->info('CRON READ INVOICE CALL >> '.wc_print_r($responsein, true), ['source' => 'bfx-pay-woocommerce']);
                 }
                 $datain = json_decode($responsein);
                 foreach ($datain as $invoice) {
@@ -464,9 +471,9 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         wp_mail($to, $subject, self::htmlEmailTemplate($name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $product, $invoice, $amount), $headers);
 
         if ($this->debug) {
-            update_option('webhook_debug', $_POST);
+            update_option('webhook_debug', $payload);
             $logger = wc_get_logger();
-            $logger->info(wc_print_r($_POST, true), ['source' => 'bfx-pay-woocommerce']);
+            $logger->info('WEBHOOK CALL >> '.wc_print_r($payload, true), ['source' => 'bfx-pay-woocommerce']);
         }
         ob_clean();
         status_header(200);
