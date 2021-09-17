@@ -67,9 +67,15 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             'timeout' => 3.0,
         ]);
     }
+    /**
+     * Error
+     */
     function woocommerce_add_error( $error ) {
         if (strpos($error,'500') !== false) {
             $error = '500 Internal Server Error';
+        }
+        if (strpos($error,'403') !== false) {
+            $error = '403 Forbidden';
         }
         return $error;
     }
@@ -446,12 +452,12 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 
         $file = plugin_dir_path(__FILE__).'../assets/img/bfx-pay-white.png';
         $uid = 'bfx-pay-white';
-        $name = 'bfx-pay-white.png';
+        $imageName = 'bfx-pay-white.png';
 
         global $phpmailer;
-        add_action('phpmailer_init', function (&$phpmailer) use ($file, $uid, $name) {
+        add_action('phpmailer_init', function (&$phpmailer) use ($file, $uid, $imageName) {
             $phpmailer->SMTPKeepAlive = true;
-            $phpmailer->AddEmbeddedImage($file, $uid, $name);
+            $phpmailer->AddEmbeddedImage($file, $uid, $imageName);
         });
 
         wp_mail($to, $subject, self::htmlEmailTemplate($name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $product, $invoice, $amount), $headers);
@@ -501,6 +507,17 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 
     public static function htmlEmailTemplate($name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $product, $invoice, $amount)
     {
+        $products = '';
+        foreach ($product as $item) {
+            $row ='<tr>
+            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif;word-wrap:break-word">'.$item['name'].'</td>
+            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">'.$item['quantity'].'</td>
+            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">
+                <span>'.$item['total'].'</span>        </td>
+            </tr>';
+            $products.=$row;
+        }
+
         $message = '
 <table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%">
                 <tbody><tr>
@@ -554,19 +571,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             </tr>
         </thead>
         <tbody>
-        <?php
-        foreach ($product as $item) {
-        ?>
-                <tr>
-                <?php ?>
-        <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif;word-wrap:break-word">'.$item['name'].'</td>
-        <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">'.$item['quantity'].'</td>
-        <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">
-            <span>'.$item['price'].'</span>        </td>
-    </tr>
-    <?php
-    }
-    ?>
+       '.$products.'
             <tr>
                         <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left;border-top-width:4px">Subtotal</th>
                         <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left;border-top-width:4px"><span>'.$subtotal['cart_subtotal']['value'].'</span></td>
