@@ -69,7 +69,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     }
 
     /**
-     * Error
+     * Error.
      */
     public function woocommerce_add_error($error)
     {
@@ -520,13 +520,13 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     {
         $products = '';
         foreach ($product as $item) {
-            $row ='<tr>
+            $row = '<tr>
             <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif;word-wrap:break-word">'.$item['name'].'</td>
             <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">'.$item['quantity'].'</td>
             <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">
                 <span>'.$item['total'].'</span>        </td>
             </tr>';
-            $products.=$row;
+            $products .= $row;
         }
 
         $message = '
