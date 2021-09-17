@@ -67,22 +67,30 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             'timeout' => 3.0,
         ]);
     }
+
     /**
      * Error
      */
-    function woocommerce_add_error( $error ) {
-        if (strpos($error,'500') !== false) {
-            $error = '500 Internal Server Error';
+    public function woocommerce_add_error($error)
+    {
+        $errPos = strpos($error, '["error",null,"ERR_PAY');
+        if (false !== $errPos) {
+            $bracketPos = strpos($error, ']', $errPos);
+
+            if (false !== $bracketPos) {
+                $errJson = json_decode(substr($error, $errPos, $bracketPos), true);
+
+                return 'Bitfinex invoice creation failed with reason: '.$errJson[2];
+            }
         }
-        if (strpos($error,'403') !== false) {
-            $error = '403 Forbidden';
-        }
+
         return $error;
     }
+
     /**
      * Cron.
      */
-    function cron_add_fifteen_min($schedules)
+    public function cron_add_fifteen_min($schedules)
     {
         $schedules['fifteen_min'] = [
             'interval' => 60 * 15,
@@ -92,7 +100,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         return $schedules;
     }
 
-    function bitfinex_cron_activation()
+    public function bitfinex_cron_activation()
     {
         if (!wp_next_scheduled('bitfinex_fifteen_min_event')) {
             wp_schedule_event(time(), 'fifteen_min', 'bitfinex_fifteen_min_event');
@@ -208,6 +216,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                     'BTC' => 'BTC',
                     'ETH' => 'ETH',
                     'UST-ETH' => 'UST-ETH',
+                    'UST-TRX' => 'UST-TRX',
+                    'LNX' => 'LNX',
                 ],
             ],
             'currency' => [
@@ -240,6 +250,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $bfxImgPath = plugin_dir_url(__FILE__).'../assets/img/';
         $bfxPayWhite = $bfxImgPath.'bfx-pay-white.svg';
         $bfxPayDark = $bfxImgPath.'bfx-pay-dark.svg';
+
         return ('Light' === $this->buttonType) ? $bfxPayWhite : $bfxPayDark;
     }
 
@@ -322,7 +333,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             if ($this->debug) {
                 wc_add_notice($response, 'notice');
                 $logger = wc_get_logger();
-                $logger->info(wc_print_r($response, true), ['source' => 'bfx-pay-woocommerce']);
+                $logger->info('CREATE INVOICE CALL >> '.wc_print_r($response, true), ['source' => 'bfx-pay-woocommerce']);
             }
         } catch (\Throwable $ex) {
             wc_add_notice($ex->getMessage(), 'error');
@@ -345,7 +356,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         // Return thankyou redirect
         return [
             'result' => 'success',
-            'redirect' => $this->get_option('redirect_url') . $data->id,
+            'redirect' => $this->get_option('redirect_url').$data->id,
         ];
     }
 
@@ -386,7 +397,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 if ($this->debug) {
                     wc_add_notice($responsein, 'notice');
                     $logger = wc_get_logger();
-                    $logger->info(wc_print_r($responsein, true), ['source' => 'bfx-pay-woocommerce']);
+                    $logger->info('CRON READ INVOICE CALL >> '.wc_print_r($responsein, true), ['source' => 'bfx-pay-woocommerce']);
                 }
                 $datain = json_decode($responsein);
                 foreach ($datain as $invoice) {
@@ -463,9 +474,9 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         wp_mail($to, $subject, self::htmlEmailTemplate($name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $product, $invoice, $amount), $headers);
 
         if ($this->debug) {
-            update_option('webhook_debug', $_POST);
+            update_option('webhook_debug', $payload);
             $logger = wc_get_logger();
-            $logger->info(wc_print_r($_POST, true), ['source' => 'bfx-pay-woocommerce']);
+            $logger->info('WEBHOOK CALL >> '.wc_print_r($payload, true), ['source' => 'bfx-pay-woocommerce']);
         }
         ob_clean();
         status_header(200);
