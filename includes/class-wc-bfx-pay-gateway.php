@@ -84,7 +84,10 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             }
         }
 
-        return $error;
+        $logger = wc_get_logger();
+        $logger->error('CREATE INVOICE CALL >> '.$error, ['source' => 'bfx-pay-woocommerce']);
+
+        return 'Internal server error, please try again later';
     }
 
     /**
