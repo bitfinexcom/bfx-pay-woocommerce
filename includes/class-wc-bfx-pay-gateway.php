@@ -460,10 +460,14 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $total = $order->get_order_item_totals();
         $address = $order->get_formatted_billing_address();
         $product = $order->get_items();
-
-        $file = plugin_dir_path(__FILE__).'../assets/img/bfx-pay-white.png';
+        $postcode = $order->get_billing_postcode();
+        $state = $order->get_billing_state();
+        $city = $order->get_billing_city();
+        $address_1 = $order->get_billing_address_1();
+        $date = $date->format('d-m-Y');
+        $file = plugin_dir_path(__FILE__).'../assets/img/bfx-pay-white-mail.png';
         $uid = 'bfx-pay-white';
-        $imageName = 'bfx-pay-white.png';
+        $imageName = 'bfx-pay-white-mail.png';
 
         global $phpmailer;
         add_action('phpmailer_init', function (&$phpmailer) use ($file, $uid, $imageName) {
@@ -471,7 +475,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             $phpmailer->AddEmbeddedImage($file, $uid, $imageName);
         });
 
-        wp_mail($to, $subject, self::htmlEmailTemplate($name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $product, $invoice, $amount), $headers);
+        wp_mail($to, $subject, self::htmlEmailTemplate($postcode, $state, $city, $address_1, $name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $product, $invoice, $amount), $headers);
 
         if ($this->debug) {
             update_option('webhook_debug', $payload);
@@ -516,14 +520,14 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         }
     }
 
-    public static function htmlEmailTemplate($name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $product, $invoice, $amount)
+    public static function htmlEmailTemplate($postcode, $state, $city, $address_1, $name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $product, $invoice, $amount)
     {
         $products = '';
         foreach ($product as $item) {
-            $row = '<tr>
-            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif;word-wrap:break-word">'.$item['name'].'</td>
+            $row = '<tr style="height: 75px;">
+            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;border-left: unset; text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif;word-wrap:break-word">'.$item['name'].'</td>
             <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">'.$item['quantity'].'</td>
-            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">
+            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;border-right: unset; text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">
                 <span>'.$item['total'].'</span>        </td>
             </tr>';
             $products .= $row;
@@ -535,7 +539,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                     <td align="center" valign="top">
                         <div id="m_1823764989813667934template_header_image">
                                                     </div>
-                        <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color:#f5f5f5;border:1px solid #dedede;border-radius:3px">
+                        <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color:#f2f2f5;border:4px solid #f2f2f5;border-radius:10px">
                             <tbody><tr>
                                 <td align="center" valign="top">
                                     <table border="0" cellpadding="0" cellspacing="0" width="100%" id="m_1823764989813667934template_header" style="color:black;border-bottom:0;font-weight:bold;line-height:100%;vertical-align:middle;font-family:&quot;Helvetica Neue&quot;,Helvetica,Roboto,Arial,sans-serif;border-radius:3px 3px 0 0">
@@ -556,40 +560,41 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 
                                                 <table border="0" cellpadding="20" cellspacing="0" width="100%">
                                                     <tbody><tr>
-                                                        <td valign="top" style="padding:0px 48px 32px">
+                                                        <td valign="top" style="padding:0px 16px">
                                                             <div id="m_1823764989813667934body_content_inner" style="color:#636363;font-family:&quot;Helvetica Neue&quot;,Helvetica,Roboto,Arial,sans-serif;font-size:14px;line-height:150%;text-align:left"><span>
-<h1 style="font-size:18px;font-weight:bold; text-align:center">Thanks for shopping with us</h1>
+<h1 style="font-size:24px;font-weight:bold; text-align:center">Thanks for shopping with us</h1>
 <p style="margin:0 0 16px; font-weight:bold;">Hi '.$name.',</p>
-<p style="margin:0 0 16px">We have finished processing your order</p>
+<p style="margin:30px 0 16px;border-bottom: 1px solid #e2e2e2;padding-bottom: 16px;">We have finished processing your order</p>
 
 <div style="display:flex;justify-content:space-between;">
 <p style="margin:0 0 16px;font-weight:bold;">Order # '.$orderId.'  </p>
 <p style="margin:0 0 16px;font-weight:bold; margin: 0 0 0 auto;">&ensp;&ensp;&ensp;'.substr($date, 0, 10).'</p>
 </div>
-<div style="display:flex; justify-content:space-between;">
-<p style="margin:0 0 16px;font-weight:bold;">Payment method: <img src="cid:bfx-pay-white" alt="Bitfinex"></p>
+<div style="height: 18px; display:flex;">
+<p style="margin:0 0 16px;font-weight:bold; display: contents;">Payment method: </p>
+<img src="cid:bfx-pay-white" alt="Bitfinex" style="margin-top: -10px;margin-left: 5px;">
 <p style="margin:0 0 16px; font-weight:bold;margin: 0 0 0 auto;">'.$amount.' '.$invoice['payCurrency'].'</p>
 </div>
-<p style="margin:0 0 16px; font-weight:bold;">Transaction address: <a style="color: green">'.$invoice['address'].'</a></p>
+<p style="margin:10 0 16px; font-weight:bold; display: grid;">Transaction address: <a style="color: #03ca9b">'.$invoice['address'].'</a></p>
 
-<div style="margin-bottom:40px">
-    <table cellspacing="0" cellpadding="6" border="1" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;width:100%;">
-        <thead>
-            <tr>
-                <th scope="col" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Product</th>
-                <th scope="col" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Quantity</th>
-                <th scope="col" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Price</th>
+<div style="margin-bottom:40px; border-top: 1px solid #e2e2e2; padding-top: 34px;">
+    <table cellspacing="0" cellpadding="6" border="1" style="color:#636363; border: unset; vertical-align:middle; width:100%; background-color: #f9f9f9;">
+        <thead style="height: 75px;">
+            <tr style="height: 75px;">
+                <th scope="col" style="color:#636363; border:1px solid #e5e5e5; border-left: unset; border-top: unset;vertical-align:middle;padding:12px;text-align:left">Product</th>
+                <th scope="col" style="color:#636363; border:1px solid #e5e5e5; vertical-align:middle;padding:12px; border-top: unset; text-align:left">Quantity</th>
+                <th scope="col" style="color:#636363; border:1px solid #e5e5e5; border-right: unset; border-top: unset; vertical-align:middle;padding:12px;text-align:left">Price</th>
             </tr>
         </thead>
         <tbody>
        '.$products.'
-            <tr>
-                        <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left;border-top-width:4px">Subtotal</th>
-                        <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left;border-top-width:4px"><span>'.$subtotal['cart_subtotal']['value'].'</span></td>
+            <tr style="height: 75px;">
+                        <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;border-left: unset;vertical-align:middle;padding:12px;text-align:left;">Subtotal</th>
+                        <td style="color:#636363;border:1px solid #e5e5e5;border-right: unset;vertical-align:middle;padding:12px;text-align:left;"><span>'.$subtotal['cart_subtotal']['value'].'</span></td>
                     </tr>
-                                        <tr>
-                        <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Total:</th>
-                        <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left"><span>'.$total['order_total']['value'].'</span></td>
+                                        <tr style="height: 75px;">
+                        <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;border-left: unset;border-bottom: unset;vertical-align:middle;padding:12px;text-align:left">Total:</th>
+                        <td style="color:#636363;border:1px solid #e5e5e5;border-right: unset;border-bottom: unset;vertical-align:middle;padding:12px;text-align:left"><span>'.$total['order_total']['value'].'</span></td>
                     </tr>
 
         </tbody>
@@ -598,10 +603,13 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 <table cellspacing="0" cellpadding="0" border="0" style="width:100%;vertical-align:top;margin-bottom:40px;padding:0">
     <tbody><tr>
         <td valign="top" width="50%" style="text-align:left;border:0;padding:0">
-            <h2 style="display:block;font-family:&quot;Helvetica Neue&quot;,Helvetica,Roboto,Arial,sans-serif;font-size:18px;font-weight:bold;line-height:130%;margin:0 0 18px;text-align:left">Billing Address</h2>
-
-            <address style="padding:12px;color:#636363;border:1px solid #e5e5e5 background-color:#f5f5f5;">'.$address.'
-            </address>
+            <h2 style="display:block;font-size:18px;font-weight:bold;line-height:130%;margin:0 0 18px;text-align:left">Billing Address</h2>
+            <div style="background-color: #f9f9f9;padding: 20px 0 20px 12px;">
+            <div>'.$address_1.'</div>
+            <div>'.$city.'</div>
+            <div>'.$state.'</div>
+            <div>'.$postcode.'</div>
+            </div>
         </td>
             </tr>
 </tbody></table>
