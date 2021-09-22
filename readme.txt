@@ -8,7 +8,7 @@ Stable tag: 1.0.0
 License: GPLv3
 License URI: https://github.com/bitfinexcom/bfx-pay-woocommerce/blob/main/LICENSE
 
-Get started with Bitfinex Pay, and with a few simple clicks, start accepting cryptocurrency payments on your WooCommerce website.
+Allows e-commerce customers to pay for goods and services with crypto currencies. It provides a payment gateway that could be used by any e-commerce to sell their products and services as long as they have an Intermediate-verified (or higher KYC level) Merchant account on the Bitfinex platform.
 
 == Description ==
 Bitfinex Pay allows you to accept payments in various cryptocurrencies seamlessly. It is built with both the merchant and customer in mind, so it is loaded with beneficial features for both parties. The Bitfinex Pay WooCommerce plugin provides you with all Bitfinex Pay’s superpowers with a minimum setup time. Backed with Bitfinex’s top-notch technology and experience as one of the longest-running crypto exchanges, Bitfinex Pay is ready to serve e-commerce platforms, online businesses, and service providers looking to adopt cryptocurrency payments.
