@@ -69,9 +69,21 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     }
 
     /**
-     * Error.
+     * Handle fixing guzzle curl error
      */
     public function woocommerce_add_error($error)
+    {
+        if (false !== strpos(strtolower($error), 'curl')) {
+            $logger = wc_get_logger();
+            $logger->error($error, ['source' => 'bfx-pay-woocommerce']);
+
+            return 'Internal server error, please try again later';
+        }
+
+        return $error;
+    }
+
+    protected function format_bfx_error($error)
     {
         $errPos = strpos($error, '["error",null,"ERR_PAY');
         if (false !== $errPos) {
@@ -83,9 +95,6 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 return 'Bitfinex invoice creation failed with reason: '.$errJson[2];
             }
         }
-
-        $logger = wc_get_logger();
-        $logger->error('CREATE INVOICE CALL >> '.$error, ['source' => 'bfx-pay-woocommerce']);
 
         return 'Internal server error, please try again later';
     }
@@ -339,8 +348,14 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 $logger->info('CREATE INVOICE CALL >> '.wc_print_r($response, true), ['source' => 'bfx-pay-woocommerce']);
             }
         } catch (\Throwable $ex) {
-            wc_add_notice($ex->getMessage(), 'error');
-            $order->update_status('failed', $ex->getMessage());
+            $error = $ex->getMessage();
+            $userError = $this->format_bfx_error($error);
+
+            $logger = wc_get_logger();
+            $logger->error('CREATE INVOICE CALL >> '.$error, ['source' => 'bfx-pay-woocommerce']);
+
+            wc_add_notice($userError, 'error');
+            $order->update_status('failed', $userError);
 
             return [
                 'result' => 'failure',
