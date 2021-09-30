@@ -461,8 +461,6 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $order->payment_complete();
         $to = $order->get_billing_email();
         $subject = 'Payment BFX';
-        define('WP_USE_THEMES', false);
-        require 'wp-load.php';
 
         $headers = 'MIME-Version: 1.0'."\r\n";
         $headers .= "Content-type: text/html; charset=UTF-8 \r\n";
