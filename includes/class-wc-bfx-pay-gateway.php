@@ -75,7 +75,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     {
         if (false !== strpos(strtolower($error), 'curl')) {
             $logger = wc_get_logger();
-            $logger->error($error, ['source' => 'bfx-pay-woocommerce']);
+            $logger->error($error, ['source' => 'bitfinex-pay']);
 
             return 'Internal server error, please try again later';
         }
@@ -126,8 +126,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     {
         $this->id = 'bfx_payment';
         $this->icon = apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-white.svg', __FILE__));
-        $this->method_title = __('Bitfinex Payment', 'bfx-pay-woocommerce');
-        $this->method_description = __('Bitfinex Payment', 'bfx-pay-woocommerce');
+        $this->method_title = __('Bitfinex Payment', 'bitfinex-pay');
+        $this->method_description = __('Bitfinex Payment', 'bitfinex-pay');
         $this->has_fields = true;
         $this->debug = ('yes' === $this->get_option('debug'));
     }
@@ -139,88 +139,88 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     {
         $this->form_fields = [
             'enabled' => [
-                'title' => __('Enable/Disable', 'bfx-pay-woocommerce'),
-                'label' => __('Enable', 'bfx-pay-woocommerce'),
+                'title' => __('Enable/Disable', 'bitfinex-pay'),
+                'label' => __('Enable', 'bitfinex-pay'),
                 'type' => 'checkbox',
                 'description' => '',
                 'default' => 'no',
             ],
             'title' => [
-                'title' => __('Title', 'bfx-pay-woocommerce'),
+                'title' => __('Title', 'bitfinex-pay'),
                 'type' => 'text',
                 'desc_tip' => true,
-                'description' => __('This controls the title which the user sees during checkout.', 'bfx-pay-woocommerce'),
+                'description' => __('This controls the title which the user sees during checkout.', 'bitfinex-pay'),
             ],
             'description' => [
-                'title' => __('Description', 'bfx-pay-woocommerce'),
+                'title' => __('Description', 'bitfinex-pay'),
                 'type' => 'text',
                 'desc_tip' => true,
-                'description' => __('This controls the description which the user sees during checkout.', 'bfx-pay-woocommerce'),
+                'description' => __('This controls the description which the user sees during checkout.', 'bitfinex-pay'),
             ],
             'instructions' => [
-                'title' => __('Instructions', 'bfx-pay-woocommerce'),
+                'title' => __('Instructions', 'bitfinex-pay'),
                 'type' => 'textarea',
-                'default' => __('', 'bfx-pay-woocommerce'),
+                'default' => __('', 'bitfinex-pay'),
                 'desc_tip' => true,
-                'description' => __('Instructions that will be added to the thank you page and emails.', 'bfx-pay-woocommerce'),
+                'description' => __('Instructions that will be added to the thank you page and emails.', 'bitfinex-pay'),
             ],
             'base_api_url' => [
-                'title' => __('Api url', 'bfx-pay-woocommerce'),
+                'title' => __('Api url', 'bitfinex-pay'),
                 'type' => 'text',
                 'default' => '',
-                'description' => __('By default it is "https://api.bitfinex.com/"', 'bfx-pay-woocommerce'),
+                'description' => __('By default it is "https://api.bitfinex.com/"', 'bitfinex-pay'),
                 'desc_tip' => true,
             ],
             'redirect_url' => [
-                'title' => __('Redirect url', 'bfx-pay-woocommerce'),
+                'title' => __('Redirect url', 'bitfinex-pay'),
                 'type' => 'text',
                 'default' => 'https://pay.bitfinex.com/gateway/order/',
-                'description' => __('By default it is "https://pay.bitfinex.com/gateway/order/"', 'bfx-pay-woocommerce'),
+                'description' => __('By default it is "https://pay.bitfinex.com/gateway/order/"', 'bitfinex-pay'),
                 'desc_tip' => true,
             ],
             'api_key' => [
-                'title' => __('Api key', 'bfx-pay-woocommerce'),
+                'title' => __('Api key', 'bitfinex-pay'),
                 'type' => 'text',
                 'default' => '',
-                'description' => __('Enter your bitfinex Api key', 'bfx-pay-woocommerce'),
+                'description' => __('Enter your bitfinex Api key', 'bitfinex-pay'),
                 'desc_tip' => true,
             ],
             'api_secret' => [
-                'title' => __('Api secret', 'bfx-pay-woocommerce'),
+                'title' => __('Api secret', 'bitfinex-pay'),
                 'type' => 'password',
                 'default' => '',
-                'description' => __('Enter your bitfinex Api secret', 'bfx-pay-woocommerce'),
+                'description' => __('Enter your bitfinex Api secret', 'bitfinex-pay'),
                 'desc_tip' => true,
             ],
             'button_type' => [
-                'title' => __('Button theme', 'bfx-pay-woocommerce'),
-                'description' => __('Type of button image to display on cart and checkout pages', 'bfx-pay-woocommerce'),
+                'title' => __('Button theme', 'bitfinex-pay'),
+                'description' => __('Type of button image to display on cart and checkout pages', 'bitfinex-pay'),
                 'desc_tip' => true,
                 'type' => 'select',
                 'default' => 'Light',
                 'options' => [
-                    'Light' => __('Light theme Bitfinex button', 'bfx-pay-woocommerce'),
-                    'Dark' => __('Dark theme Bitfinex button', 'bfx-pay-woocommerce'),
+                    'Light' => __('Light theme Bitfinex button', 'bitfinex-pay'),
+                    'Dark' => __('Dark theme Bitfinex button', 'bitfinex-pay'),
                 ],
             ],
             'button_req_checkout' => [
-                'title' => __('Enable/Disable one click checkout button for products', 'bfx-pay-woocommerce'),
-                'label' => __('Enable', 'bfx-pay-woocommerce'),
+                'title' => __('Enable/Disable one click checkout button for products', 'bitfinex-pay'),
+                'label' => __('Enable', 'bitfinex-pay'),
                 'type' => 'checkbox',
                 'description' => '',
                 'default' => 'no',
             ],
             'debug' => [
-                'title' => __('Debug', 'bfx-pay-woocommerce'),
-                'label' => __('Enable debugging messages', 'bfx-pay-woocommerce'),
+                'title' => __('Debug', 'bitfinex-pay'),
+                'label' => __('Enable debugging messages', 'bitfinex-pay'),
                 'type' => 'checkbox',
                 'description' => __('Sends debug messages to the WooCommerce System Status log.', 'woocommerce-gateway-amazon-payments-advanced'),
                 'desc_tip' => true,
                 'default' => 'yes',
             ],
             'pay_currencies' => [
-                'title' => __('Pay currencies', 'bfx-pay-woocommerce'),
-                'description' => __('Select pay currencies that you preffer. It may be several with ctrl/cmd button.', 'bfx-pay-woocommerce'),
+                'title' => __('Pay currencies', 'bitfinex-pay'),
+                'description' => __('Select pay currencies that you preffer. It may be several with ctrl/cmd button.', 'bitfinex-pay'),
                 'desc_tip' => true,
                 'type' => 'multiselect',
                 'default' => 'BTC',
@@ -233,8 +233,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 ],
             ],
             'currency' => [
-                'title' => __('Currency', 'bfx-pay-woocommerce'),
-                'description' => __('Select currency.', 'bfx-pay-woocommerce'),
+                'title' => __('Currency', 'bitfinex-pay'),
+                'description' => __('Select currency.', 'bitfinex-pay'),
                 'desc_tip' => true,
                 'type' => 'multiselect',
                 'default' => 'USD',
@@ -243,13 +243,13 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 ],
             ],
             'duration' => [
-                'title' => __('Duration: sec', 'bfx-pay-woocommerce'),
-                'label' => __('sec', 'bfx-pay-woocommerce'),
+                'title' => __('Duration: sec', 'bitfinex-pay'),
+                'label' => __('sec', 'bitfinex-pay'),
                 'type' => 'number',
                 'default' => '86399',
                 'custom_attributes' => ['step' => 'any', 'min' => '0'],
                 'desc_tip' => true,
-                'description' => __('This controls the duration.', 'bfx-pay-woocommerce'),
+                'description' => __('This controls the duration.', 'bitfinex-pay'),
             ],
         ];
     }
@@ -345,14 +345,14 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             if ($this->debug) {
                 wc_add_notice($response, 'notice');
                 $logger = wc_get_logger();
-                $logger->info('CREATE INVOICE CALL >> '.wc_print_r($response, true), ['source' => 'bfx-pay-woocommerce']);
+                $logger->info('CREATE INVOICE CALL >> '.wc_print_r($response, true), ['source' => 'bitfinex-pay']);
             }
         } catch (\Throwable $ex) {
             $error = $ex->getMessage();
             $userError = $this->format_bfx_error($error);
 
             $logger = wc_get_logger();
-            $logger->error('CREATE INVOICE CALL >> '.$error, ['source' => 'bfx-pay-woocommerce']);
+            $logger->error('CREATE INVOICE CALL >> '.$error, ['source' => 'bitfinex-pay']);
 
             wc_add_notice($userError, 'error');
             $order->update_status('failed', $userError);
@@ -415,7 +415,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 if ($this->debug) {
                     wc_add_notice($responsein, 'notice');
                     $logger = wc_get_logger();
-                    $logger->info('CRON READ INVOICE CALL >> '.wc_print_r($responsein, true), ['source' => 'bfx-pay-woocommerce']);
+                    $logger->info('CRON READ INVOICE CALL >> '.wc_print_r($responsein, true), ['source' => 'bitfinex-pay']);
                 }
                 $datain = json_decode($responsein);
                 foreach ($datain as $invoice) {
@@ -498,7 +498,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         if ($this->debug) {
             update_option('webhook_debug', $payload);
             $logger = wc_get_logger();
-            $logger->info('WEBHOOK CALL >> '.wc_print_r($payload, true), ['source' => 'bfx-pay-woocommerce']);
+            $logger->info('WEBHOOK CALL >> '.wc_print_r($payload, true), ['source' => 'bitfinex-pay']);
         }
         ob_clean();
         status_header(200);

@@ -4,10 +4,10 @@ Allows e-commerce customers to pay for goods and services with crypto currencies
 ## How to install
 **Make sure the WooCommerce plugin is installed before starting installation.**
 
-1. Download the `bfx-pay-plugin.zip` file from latest release on github page.
+1. Download the `bitfinex-pay.zip` file from latest release on github page.
 2. Go to the WordPress admin panel then navigate to the `Plugins` > `Add New` from the left sidebar.
 3. Click to the `Upload Plugin` button at the top of the page.
-4. Select the `bfx-pay-plugin.zip` file which was downloaded on step 1 and click the `Install Now` button. Don't forget to activate the plugin by the `Activate Plugin` button at the bottom of the page.
+4. Select the `bitfinex-pay.zip` file which was downloaded on step 1 and click the `Install Now` button. Don't forget to activate the plugin by the `Activate Plugin` button at the bottom of the page.
 5. Install plugin WP Mail SMTP or other and configure mail settings.
 
 ### Configuration

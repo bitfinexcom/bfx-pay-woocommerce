@@ -1,4 +1,4 @@
-=== Bitfinex Pay Plugin ===
+=== Bitfinex Pay ===
 Contributors: viganabd
 Tags: bitcoin payments, crypto payments, bitcoin, tether token, bitfinex pay, cryptocurrency pay, pay with bitcoin, ethereum payments, tether payments
 Requires at least: 5.0
