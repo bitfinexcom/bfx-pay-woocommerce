@@ -69,7 +69,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     }
 
     /**
-     * Handle fixing guzzle curl error
+     * Handle fixing guzzle curl error.
      */
     public function woocommerce_add_error($error)
     {

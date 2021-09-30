@@ -20,12 +20,12 @@ if (!in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get
 }
 
 add_action('plugins_loaded', 'bfx_pay_woocommerce_init', 11);
-add_action('woocommerce_after_add_to_cart_form', 'buy_checkout_on_archive');
-add_action('template_redirect', 'addtocart_on_archives_redirect_checkout');
+add_action('woocommerce_after_add_to_cart_form', 'bfx_pay_buy_checkout_on_archive');
+add_action('template_redirect', 'bfx_pay_addtocart_on_archives_redirect_checkout');
 add_action('phpmailer_init', 'mailer_config', 10, 1);
 add_action('wp_mail_failed', 'log_mailer_errors', 10, 1);
 
-add_filter('woocommerce_payment_gateways', 'add_to_woo_bfx_payment_gateway');
+add_filter('woocommerce_payment_gateways', 'bfx_pay_add_bfx_payment_gateway_woo');
 add_filter('plugin_row_meta', 'bfx_pay_plugin_row_meta', 10, 3);
 
 function bfx_pay_woocommerce_init()
@@ -36,7 +36,7 @@ function bfx_pay_woocommerce_init()
     }
 }
 
-function add_to_woo_bfx_payment_gateway($gateways)
+function bfx_pay_add_bfx_payment_gateway_woo($gateways)
 {
     $gateways[] = 'WC_Bfx_Pay_Gateway';
 
@@ -53,7 +53,7 @@ function bfx_pay_plugin_row_meta($links, $file)
     return $links;
 }
 
-function buy_checkout_on_archive()
+function bfx_pay_buy_checkout_on_archive()
 {
     if (class_exists('WC_Bfx_Pay_Gateway')) {
         global $product;
@@ -73,7 +73,7 @@ function buy_checkout_on_archive()
     }
 }
 
-function addtocart_on_archives_redirect_checkout()
+function bfx_pay_addtocart_on_archives_redirect_checkout()
 {
     if (isset($_GET['addtocart']) && $_GET['addtocart'] > 0) {
         WC()->cart->empty_cart();
