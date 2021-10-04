@@ -37,6 +37,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $this->init_settings();
 
         // Get settings.
+        $this->isEnabled = $this->get_option('enabled');
         $this->title = $this->get_option('title');
         $this->description = $this->get_option('description');
         $this->instructions = $this->get_option('instructions');

@@ -59,7 +59,7 @@ function bfx_pay_buy_checkout_on_archive()
         global $product;
         $instance = new WC_Bfx_Pay_Gateway();
         $icon = $instance->get_icon_uri();
-        $checkButton = ('yes' === $instance->checkReqButton) ? true : false;
+        $checkButton = ('yes' === $instance->isEnabled && 'yes' === $instance->checkReqButton) ? true : false;
 
         if ($checkButton) {
             if ($product->is_type('simple')) {
