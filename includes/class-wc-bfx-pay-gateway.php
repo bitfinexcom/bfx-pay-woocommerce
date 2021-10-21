@@ -317,6 +317,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 'nationality' => $order->get_billing_country(),
                 'residCountry' => $order->get_billing_country(),
                 'residCity' => $order->get_billing_city(),
+                'residState' => $order->get_billing_state(),
                 'residZipCode' => $order->get_billing_postcode(),
                 'residStreet' => $order->get_billing_address_1(),
                 'fullName' => $order->get_formatted_billing_full_name(),
