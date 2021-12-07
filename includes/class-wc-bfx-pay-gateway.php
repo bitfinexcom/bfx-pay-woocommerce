@@ -230,6 +230,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                     'ETH' => 'ETH',
                     'UST-ETH' => 'UST-ETH',
                     'UST-TRX' => 'UST-TRX',
+                    'UST-LBT' => 'UST-LBT',
+                    'LBT' => 'LBT',
                     'LNX' => 'LNX',
                 ],
             ],
