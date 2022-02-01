@@ -233,6 +233,12 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                     'UST-LBT' => 'UST-LBT',
                     'LBT' => 'LBT',
                     'LNX' => 'LNX',
+                    'LTC' => 'LTC',
+                    'SOL' => 'SOL',
+                    'DOGE' => 'DOGE',
+                    'MATIC' => 'MATIC',
+                    'MATICM' => 'MATICM',
+                    'AVAX' => 'AVAX'
                 ],
             ],
             'currency' => [
@@ -243,6 +249,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 'default' => 'USD',
                 'options' => [
                     'USD' => 'USD',
+                    'EUR' => 'EUR',
+                    'GBP' => 'GBP'
                 ],
             ],
             'duration' => [

@@ -85,6 +85,10 @@ Note: The maximum invoice amount is $ 1,000 (equivalent).
 
 
 == Changelog ==
+= 1.0.5 =
+* Added support for EUR, GBP fiat currencies
+* Added support for LTC, SOL, DOGE, MATIC, MATICM, AVAX crypto currencies
+
 = 1.0.4 =
 * Added support for LBT and UST-LBT
 
