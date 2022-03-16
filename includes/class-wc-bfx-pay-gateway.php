@@ -41,6 +41,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $this->title = $this->get_option('title');
         $this->description = $this->get_option('description');
         $this->instructions = $this->get_option('instructions');
+        $this->complectedInstructions = $this->get_option('complected_instruction');
         $this->buttonType = $this->get_option('button_type');
         $this->baseApiUrl = $this->get_option('base_api_url') ?? $this->baseApiUrl;
         $this->apiKey = $this->get_option('api_key');
@@ -54,13 +55,16 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         add_action('woocommerce_update_options_payment_gateways_'.$this->id, [$this, 'process_admin_options']);
         add_filter('woocommerce_payment_complete_order_status', [$this, 'change_payment_complete_order_status'], 10, 3);
         // Customer Emails.
-        add_action('woocommerce_email_before_order_table', [$this, 'email_instructions'], 10, 3);
+        add_action( 'woocommerce_email_order_details', [$this, 'remove_order_details'], 1, 4);
+        add_action( 'woocommerce_email_order_details', [$this, 'email_template'], 20, 4 );
         add_action('woocommerce_api_bitfinex', [$this, 'webhook']);
+
         // Cron
         add_filter('cron_schedules', [$this, 'cron_add_fifteen_min']);
         add_filter('woocommerce_add_error', [$this, 'woocommerce_add_error']);
         add_action('wp', [$this, 'bitfinex_cron_activation']);
         add_action('bitfinex_fifteen_min_event', [$this, 'cron_invoice_check']);
+
 
         $baseUrl = $this->baseApiUrl;
         $this->client = new GuzzleHttp\Client([
@@ -159,11 +163,18 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 'description' => __('This controls the description which the user sees during checkout.', 'bitfinex-pay'),
             ],
             'instructions' => [
-                'title' => __('Instructions', 'bitfinex-pay'),
+                'title' => __('Order received email instructions', 'bitfinex-pay'),
                 'type' => 'textarea',
                 'default' => __('', 'bitfinex-pay'),
                 'desc_tip' => true,
-                'description' => __('Instructions that will be added to the thank you page and emails.', 'bitfinex-pay'),
+                'description' => __('You can add a message to the email the user receives when starting the order', 'bitfinex-pay'),
+            ],
+            'complected_instruction' => [
+                'title' => __('Order completed email instructions', 'bfx-pay-woocommerce'),
+                'type' => 'textarea',
+                'default' => __('', 'bfx-pay-woocommerce'),
+                'desc_tip' => true,
+                'description' => __('You can add a thank you message to the email the user receives when the payments is received', 'bfx-pay-woocommerce'),
             ],
             'base_api_url' => [
                 'title' => __('Api url', 'bitfinex-pay'),
@@ -242,15 +253,16 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 ],
             ],
             'currency' => [
-                'title' => __('Currency', 'bitfinex-pay'),
-                'description' => __('Select currency.', 'bitfinex-pay'),
+                'title' => __('Base fiat currency', 'bitfinex-pay'),
+                'description' => __('This is the fiat currency which is shown as base price on your
+invoices.', 'bfx-pay-woocommerce'),
                 'desc_tip' => true,
-                'type' => 'multiselect',
+                'type' => 'select',
                 'default' => 'USD',
                 'options' => [
                     'USD' => 'USD',
                     'EUR' => 'EUR',
-                    'GBP' => 'GBP'
+                    'GBP' => 'GBP',
                 ],
             ],
             'duration' => [
@@ -317,7 +329,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $nonce = (string) (time() * 1000 * 1000); // epoch in ms * 1000
         $body = [
             'amount' => $totalSum,
-            'currency' => $currency[0],
+            'currency' => $currency,
             'payCurrencies' => $payCurrencies,
             'orderId' => "$order_id",
             'duration' => intval($duration),
@@ -472,38 +484,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 
         $order->payment_complete();
         $to = $order->get_billing_email();
-        $subject = 'Payment BFX';
 
-        $headers = 'MIME-Version: 1.0'."\r\n";
-        $headers .= "Content-type: text/html; charset=UTF-8 \r\n";
-        $invoice = $data['invoices'][0];
-        $amount = $invoice['amount'];
-        $amount = preg_replace('/0+$/', '', sprintf('%.10f', $amount));
-        $name = $order->get_billing_first_name();
-        $orderId = $order->get_id();
-        $date = $order->get_date_paid();
-        $payment = $order->get_payment_method();
-        $currency = $order->get_currency();
-        $subtotal = $order->get_order_item_totals();
-        $total = $order->get_order_item_totals();
-        $address = $order->get_formatted_billing_address();
-        $product = $order->get_items();
-        $postcode = $order->get_billing_postcode();
-        $state = $order->get_billing_state();
-        $city = $order->get_billing_city();
-        $address_1 = $order->get_billing_address_1();
-        $date = $date->format('d-m-Y');
-        $file = plugin_dir_path(__FILE__).'../assets/img/bfx-pay-white-mail.png';
-        $uid = 'bfx-pay-white';
-        $imageName = 'bfx-pay-white-mail.png';
-
-        global $phpmailer;
-        add_action('phpmailer_init', function (&$phpmailer) use ($file, $uid, $imageName) {
-            $phpmailer->SMTPKeepAlive = true;
-            $phpmailer->AddEmbeddedImage($file, $uid, $imageName);
-        });
-
-        wp_mail($to, $subject, self::htmlEmailTemplate($postcode, $state, $city, $address_1, $name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $product, $invoice, $amount), $headers);
+        wp_mail($to);
 
         if ($this->debug) {
             update_option('webhook_debug', $payload);
@@ -535,127 +517,99 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     }
 
     /**
-     * Add content to the WC emails.
-     *
-     * @param WC_Order $order         order object
-     * @param bool     $sent_to_admin sent to admin
-     * @param bool     $plain_text    email format: plain text or HTML
+     * Remove email templates.
      */
-    public function email_instructions($order, $sent_to_admin, $plain_text = false)
+    function remove_order_details()
     {
-        if ($this->instructions && !$sent_to_admin && $this->id === $order->get_payment_method()) {
-            echo wp_kses_post(wpautop(wptexturize($this->instructions)).PHP_EOL);
-        }
+        $mailer = WC()->mailer(); // get the instance of the WC_Emails class
+        remove_action('woocommerce_email_order_details', array($mailer, 'order_details'));
     }
 
-    public static function htmlEmailTemplate($postcode, $state, $city, $address_1, $name, $orderId, $date, $payment, $currency, $subtotal, $total, $address, $product, $invoice, $amount)
+    /**
+     * New email templates.
+     */
+    public function email_template( $order, $sent_to_admin, $plain_text, $email )
     {
+        $payload = file_get_contents('php://input');
+        $data = json_decode($payload, true);
+        $invoice = $data['invoices'][0];
+        $amount = $invoice['amount'];
+        $amount = preg_replace('/0+$/', '', sprintf('%.10f', $amount));
+        $product = $order->get_items();
+        $subtotal = $order->get_order_item_totals();
+        $total = $order->get_order_item_totals();
         $products = '';
         foreach ($product as $item) {
-            $row = '<tr style="height: 75px;">
-            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;border-left: unset; text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif;word-wrap:break-word">'.$item['name'].'</td>
-            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">'.$item['quantity'].'</td>
-            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;border-right: unset; text-align:left;vertical-align:middle;font-family:Helvetica,Roboto,Arial,sans-serif">
-                <span>'.$item['total'].'</span>        </td>
+            $row ='<tr>
+            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica Neue,Helvetica,Roboto,Arial,sans-serif;word-wrap:break-word">
+            '.$item['name'].'</td>
+            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica Neue,Helvetica,Roboto,Arial,sans-serif">'.$item['quantity'].'</td>
+            <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica Neue,Helvetica,Roboto,Arial,sans-serif">
+             <span>'.$item['total'].'</span>
+             </td>
             </tr>';
             $products .= $row;
         }
 
-        $message = '
-<table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%">
-                <tbody><tr>
-                    <td align="center" valign="top">
-                        <div id="m_1823764989813667934template_header_image">
-                                                    </div>
-                        <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color:#f2f2f5;border:4px solid #f2f2f5;border-radius:10px">
-                            <tbody><tr>
-                                <td align="center" valign="top">
-                                    <table border="0" cellpadding="0" cellspacing="0" width="100%" id="m_1823764989813667934template_header" style="color:black;border-bottom:0;font-weight:bold;line-height:100%;vertical-align:middle;font-family:&quot;Helvetica Neue&quot;,Helvetica,Roboto,Arial,sans-serif;border-radius:3px 3px 0 0">
-                                        <tbody><tr>
-                                            <td id="m_1823764989813667934header_wrapper" style="padding:36px 48px;display:block">
-                                                <h1 style="font-family:&quot;Helvetica Neue&quot;,Helvetica,Roboto,Arial,sans-serif;font-size:16px;font-weight:300;line-height:150%;margin:0;text-align:center;background-color:inherit; color:black">Julie`s Fashion</h1>
-                                            </td>
-                                        </tr>
-                                    </tbody></table>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td align="center" valign="top">
+        if ( $email->id == 'customer_completed_order' ) {
+            echo '<p>' . $email->complectedInstructions . '</p>';
+        }
 
-                                    <table border="0" cellpadding="0" cellspacing="0" width="600" id="m_1823764989813667934template_body">
-                                        <tbody><tr>
-                                            <td valign="top" id="m_1823764989813667934body_content" style="background-color:#FFFFFF">
+        if ( $email->id === 'customer_on_hold_order' ) {
+            echo '<p>' . $this->instructions . '</p>';
+        }
+        ?>
 
-                                                <table border="0" cellpadding="20" cellspacing="0" width="100%">
-                                                    <tbody><tr>
-                                                        <td valign="top" style="padding:0px 16px">
-                                                            <div id="m_1823764989813667934body_content_inner" style="color:#636363;font-family:&quot;Helvetica Neue&quot;,Helvetica,Roboto,Arial,sans-serif;font-size:14px;line-height:150%;text-align:left"><span>
-<h1 style="font-size:24px;font-weight:bold; text-align:center">Thanks for shopping with us</h1>
-<p style="margin:0 0 16px; font-weight:bold;">Hi '.$name.',</p>
-<p style="margin:30px 0 16px;border-bottom: 1px solid #e2e2e2;padding-bottom: 16px;">We have finished processing your order</p>
+        <div style="color:#636363;font-family:&quot;Helvetica Neue&quot;,Helvetica,Robot,Arial,sans-serif;font-size:14px;line-height:150%;text-align:left">
 
-<div style="display:flex;justify-content:space-between;">
-<p style="margin:0 0 16px;font-weight:bold;">Order # '.$orderId.'  </p>
-<p style="margin:0 0 16px;font-weight:bold; margin: 0 0 0 auto;">&ensp;&ensp;&ensp;'.substr($date, 0, 10).'</p>
-</div>
-<div style="height: 18px; display:flex;">
-<p style="margin:0 0 16px;font-weight:bold; display: contents;">Payment method: </p>
-<img src="cid:bfx-pay-white" alt="Bitfinex" style="margin-top: -10px;margin-left: 5px;">
-<p style="margin:0 0 16px; font-weight:bold;margin: 0 0 0 auto;">'.$amount.' '.$invoice['payCurrency'].'</p>
-</div>
-<p style="margin:10 0 16px; font-weight:bold; display: grid;">Transaction address: <a style="color: #03ca9b">'.$invoice['address'].'</a></p>
-
-<div style="margin-bottom:40px; border-top: 1px solid #e2e2e2; padding-top: 34px;">
-    <table cellspacing="0" cellpadding="6" border="1" style="color:#636363; border: unset; vertical-align:middle; width:100%; background-color: #f9f9f9;">
-        <thead style="height: 75px;">
-            <tr style="height: 75px;">
-                <th scope="col" style="color:#636363; border:1px solid #e5e5e5; border-left: unset; border-top: unset;vertical-align:middle;padding:12px;text-align:left">Product</th>
-                <th scope="col" style="color:#636363; border:1px solid #e5e5e5; vertical-align:middle;padding:12px; border-top: unset; text-align:left">Quantity</th>
-                <th scope="col" style="color:#636363; border:1px solid #e5e5e5; border-right: unset; border-top: unset; vertical-align:middle;padding:12px;text-align:left">Price</th>
-            </tr>
-        </thead>
-        <tbody>
-       '.$products.'
-            <tr style="height: 75px;">
-                        <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;border-left: unset;vertical-align:middle;padding:12px;text-align:left;">Subtotal</th>
-                        <td style="color:#636363;border:1px solid #e5e5e5;border-right: unset;vertical-align:middle;padding:12px;text-align:left;"><span>'.$subtotal['cart_subtotal']['value'].'</span></td>
+            <h2 style="color:#96588a;display:block;font-family:&quot;Helvetica Neue&quot;,Helvetica,Roboto,Arial,sans-serif;font-size:18px;font-weight:bold;line-height:130%;margin:0 0 18px;text-align:left">
+                [Order # <?php echo$order->id;?>] (<?php echo substr($order->date_created, 0, 10);?>)</h2>
+            <?php
+            if ( $email->id == 'customer_completed_order' ) {
+                ?>
+                <p style="margin:10px 0 16px; font-weight:bold; display: grid;">Transaction address: <a style="color: #03ca9b"><?php echo $invoice['address']?></a></p>
+                <?php
+            }
+            ?>
+            <div style="margin-bottom:40px">
+                <table cellspacing="0" cellpadding="6" border="1" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;width:100%;font-family:'Helvetica Neue',Helvetica,Roboto,Arial,sans-serif">
+                    <thead>
+                    <tr>
+                        <th scope="col" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Product</th>
+                        <th scope="col" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Quantity</th>
+                        <th scope="col" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Price</th>
                     </tr>
-                                        <tr style="height: 75px;">
-                        <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;border-left: unset;border-bottom: unset;vertical-align:middle;padding:12px;text-align:left">Total:</th>
-                        <td style="color:#636363;border:1px solid #e5e5e5;border-right: unset;border-bottom: unset;vertical-align:middle;padding:12px;text-align:left"><span>'.$total['order_total']['value'].'</span></td>
+                    </thead>
+                    <tbody>
+                    <?php echo $products ?>
+                    </tbody>
+                    <tfoot>
+                    <tr>
+                        <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left;border-top-width:4px">Subtotal:</th>
+                        <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left;border-top-width:4px"><span><?php echo $subtotal['cart_subtotal']['value'] ?></span></td>
                     </tr>
-
-        </tbody>
-    </table>
-</div>
-<table cellspacing="0" cellpadding="0" border="0" style="width:100%;vertical-align:top;margin-bottom:40px;padding:0">
-    <tbody><tr>
-        <td valign="top" width="50%" style="text-align:left;border:0;padding:0">
-            <h2 style="display:block;font-size:18px;font-weight:bold;line-height:130%;margin:0 0 18px;text-align:left">Billing Address</h2>
-            <div style="background-color: #f9f9f9;padding: 20px 0 20px 12px;">
-            <div>'.$address_1.'</div>
-            <div>'.$city.'</div>
-            <div>'.$state.'</div>
-            <div>'.$postcode.'</div>
+                    <tr>
+                        <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Payment method:</th>
+                        <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left"><?php echo $this->title ?></td>
+                    </tr>
+                    <tr>
+                        <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Total:</th>
+                        <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left"><span><?php echo $total['order_total']['value'] ?></span></td>
+                    </tr>
+                    <?php
+                    if ( $email->id == 'customer_completed_order' ) {
+                        ?>
+                        <tr>
+                            <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Paid with:</th>
+                            <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left"><span><?php echo  $amount.' '.$invoice['payCurrency']?></span></td>
+                        </tr>
+                        <?php
+                    }
+                    ?>
+                    </tfoot>
+                </table>
             </div>
-        </td>
-            </tr>
-</tbody></table>
-                                                            </span></div>
-                                                        </td>
-                                                    </tr>
-                                                </tbody></table>
-                                            </td>
-                                        </tr>
-                                    </tbody></table>
-                                </td>
-                            </tr>
-                        </tbody></table>
-                    </td>
-                </tr>
-&nbsp;
-        ';
-
-        return $message;
+        </div>
+        <?php
     }
 }
