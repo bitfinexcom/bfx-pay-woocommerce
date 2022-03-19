@@ -1,17 +1,18 @@
 <?php
 /**
  * @wordpress-plugin
- * Plugin Name:       Bitfinex Pay
- * Plugin URI:        https://github.com/bitfinexcom/bfx-pay-woocommerce/
+ * Plugin Name:       Bitfinex Pay Woocommerce Plugin
+ * Plugin URI:        https://github.com/bitfinexcom
  * Description:       Allows e-commerce customers to pay for goods and services with crypto currencies. It provides a payment gateway that could be used by any e-commerce to sell their products and services as long as they have an Intermediate-verified (or higher KYC level) Merchant account on the Bitfinex platform.
- * Version:           1.0.6
+ * Version:           1.0.0
  * Author:            Bitfinex
  * Author URI:        https://www.bitfinex.com/
- * License:           GPL-3.0
- * License URI:       http://www.gnu.org/licenses/gpl-3.0.txt
- * Text Domain:       bitfinex-pay
+ * License:           GPL-2.0+
+ * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
+ * Text Domain:       bfx-pay-woocommerce
  * Domain Path:       /languages
  */
+
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
@@ -19,45 +20,34 @@ if (!in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get
     return;
 }
 
-/**
- * Register menu elements.
- */
-class BFX_Admin_Menu
-{
-    public function __construct()
-    {
-        add_filter('plugin_action_links_' . plugin_basename( __FILE__), array($this, 'settings_link'), 10);
-    }
-
-    public function settings_link($links): array
-    {
-        $custom['settings'] = sprintf(
-            '<a href="%s" aria-label="%s">%s</a>',
-            esc_url(
-                add_query_arg(
-                    array(
-                        'page' => 'wc-settings&tab=checkout&section=bfx_payment',
-                    ),
-                    admin_url('admin.php')
-                )
-            ),
-            esc_attr__('Go to BFX Settings page', 'bfx-pay-woocommerce'),
-            esc_html__('Settings', 'bfx-pay-woocommerce')
-        );
-
-        return array_merge($custom, (array)$links);
-    }
-}
-
-new BFX_Admin_Menu();
-
 add_action('plugins_loaded', 'bfx_pay_woocommerce_init', 11);
-add_action('woocommerce_after_add_to_cart_form', 'buy_checkout_on_archive');
-add_action('template_redirect', 'addtocart_on_archives_redirect_checkout');
+add_action('woocommerce_after_add_to_cart_form', 'bfx_pay_buy_checkout_on_archive');
+add_action('template_redirect', 'bfx_pay_addtocart_on_archives_redirect_checkout');
 add_action('phpmailer_init', 'mailer_config', 10, 1);
 add_action('wp_mail_failed', 'log_mailer_errors', 10, 1);
 
-add_filter('woocommerce_payment_gateways', 'add_to_woo_bfx_payment_gateway');
+add_filter('plugin_action_links_' . plugin_basename( __FILE__), 'bfx_pay_settings_link', 10);
+add_filter('woocommerce_payment_gateways', 'bfx_pay_add_bfx_payment_gateway_woo');
+add_filter('plugin_row_meta', 'bfx_pay_plugin_row_meta', 10, 3);
+
+function bfx_pay_settings_link($links): array
+{
+    $custom['settings'] = sprintf(
+        '<a href="%s" aria-label="%s">%s</a>',
+        esc_url(
+            add_query_arg(
+                array(
+                    'page' => 'wc-settings&tab=checkout&section=bfx_payment',
+                ),
+                admin_url('admin.php')
+            )
+        ),
+        esc_attr__('Go to BFX Settings page', 'bfx-pay-woocommerce'),
+        esc_html__('Settings', 'bfx-pay-woocommerce')
+    );
+
+    return array_merge($custom, (array)$links);
+}
 
 function bfx_pay_woocommerce_init()
 {
@@ -67,20 +57,20 @@ function bfx_pay_woocommerce_init()
     }
 }
 
-function add_to_woo_bfx_payment_gateway($gateways)
+function bfx_pay_add_bfx_payment_gateway_woo($gateways)
 {
     $gateways[] = 'WC_Bfx_Pay_Gateway';
 
     return $gateways;
 }
 
-function buy_checkout_on_archive()
+function bfx_pay_buy_checkout_on_archive()
 {
     if (class_exists('WC_Bfx_Pay_Gateway')) {
         global $product;
         $instance = new WC_Bfx_Pay_Gateway();
         $icon = $instance->get_icon_uri();
-        $checkButton = ('yes' === $instance->checkReqButton) ? true : false;
+        $checkButton = ('yes' === $instance->isEnabled && 'yes' === $instance->checkReqButton) ? true : false;
 
         if ($checkButton) {
             if ($product->is_type('simple')) {
@@ -94,7 +84,7 @@ function buy_checkout_on_archive()
     }
 }
 
-function addtocart_on_archives_redirect_checkout()
+function bfx_pay_addtocart_on_archives_redirect_checkout()
 {
     if (isset($_GET['addtocart']) && $_GET['addtocart'] > 0) {
         WC()->cart->empty_cart();
