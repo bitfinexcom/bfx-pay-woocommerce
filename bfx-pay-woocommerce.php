@@ -12,6 +12,7 @@
  * Text Domain:       bitfinex-pay
  * Domain Path:       /languages
  */
+
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
@@ -25,8 +26,28 @@ add_action('template_redirect', 'bfx_pay_addtocart_on_archives_redirect_checkout
 add_action('phpmailer_init', 'mailer_config', 10, 1);
 add_action('wp_mail_failed', 'log_mailer_errors', 10, 1);
 
+add_filter('plugin_action_links_' . plugin_basename( __FILE__), 'bfx_pay_settings_link', 10);
 add_filter('woocommerce_payment_gateways', 'bfx_pay_add_bfx_payment_gateway_woo');
 add_filter('plugin_row_meta', 'bfx_pay_plugin_row_meta', 10, 3);
+
+function bfx_pay_settings_link($links): array
+{
+    $custom['settings'] = sprintf(
+        '<a href="%s" aria-label="%s">%s</a>',
+        esc_url(
+            add_query_arg(
+                array(
+                    'page' => 'wc-settings&tab=checkout&section=bfx_payment',
+                ),
+                admin_url('admin.php')
+            )
+        ),
+        esc_attr__('Go to BFX Settings page', 'bfx-pay-woocommerce'),
+        esc_html__('Settings', 'bfx-pay-woocommerce')
+    );
+
+    return array_merge($custom, (array)$links);
+}
 
 function bfx_pay_woocommerce_init()
 {
