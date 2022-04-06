@@ -55,8 +55,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         add_action('woocommerce_update_options_payment_gateways_'.$this->id, [$this, 'process_admin_options']);
         add_filter('woocommerce_payment_complete_order_status', [$this, 'change_payment_complete_order_status'], 10, 3);
         // Customer Emails.
-        add_action( 'woocommerce_email_order_details', [$this, 'remove_order_details'], 1, 4);
-        add_action( 'woocommerce_email_order_details', [$this, 'email_template'], 20, 4 );
+        add_action('woocommerce_email_order_details', [$this, 'remove_order_details'], 1, 4);
+        add_action('woocommerce_email_order_details', [$this, 'email_template'], 20, 4);
         add_action('woocommerce_api_bitfinex', [$this, 'webhook']);
 
         // Cron
@@ -520,7 +520,7 @@ invoices.', 'bfx-pay-woocommerce'),
     /**
      * Remove email templates.
      */
-    function remove_order_details()
+    public function remove_order_details()
     {
         $mailer = WC()->mailer(); // get the instance of the WC_Emails class
         remove_action('woocommerce_email_order_details', array($mailer, 'order_details'));
@@ -529,7 +529,7 @@ invoices.', 'bfx-pay-woocommerce'),
     /**
      * New email templates.
      */
-    public function email_template( $order, $sent_to_admin, $plain_text, $email )
+    public function email_template($order, $sent_to_admin, $plain_text, $email)
     {
         $payload = file_get_contents('php://input');
         $data = json_decode($payload, true);
@@ -552,26 +552,24 @@ invoices.', 'bfx-pay-woocommerce'),
             $products .= $row;
         }
 
-        if ( $email->id == 'customer_completed_order' ) {
+        if ($email->id == 'customer_completed_order') {
             echo '<p>' . $email->complectedInstructions . '</p>';
         }
 
-        if ( $email->id === 'customer_on_hold_order' ) {
+        if ($email->id === 'customer_on_hold_order') {
             echo '<p>' . $this->instructions . '</p>';
-        }
-        ?>
+        } ?>
 
         <div style="color:#636363;font-family:&quot;Helvetica Neue&quot;,Helvetica,Robot,Arial,sans-serif;font-size:14px;line-height:150%;text-align:left">
 
             <h2 style="color:#96588a;display:block;font-family:&quot;Helvetica Neue&quot;,Helvetica,Roboto,Arial,sans-serif;font-size:18px;font-weight:bold;line-height:130%;margin:0 0 18px;text-align:left">
-                [Order # <?php echo$order->id;?>] (<?php echo substr($order->date_created, 0, 10);?>)</h2>
+                [Order # <?php echo$order->id; ?>] (<?php echo substr($order->date_created, 0, 10); ?>)</h2>
             <?php
-            if ( $email->id == 'customer_completed_order' ) {
+            if ($email->id == 'customer_completed_order') {
                 ?>
                 <p style="margin:10px 0 16px; font-weight:bold; display: grid;">Transaction address: <a style="color: #03ca9b"><?php echo $invoice['address']?></a></p>
                 <?php
-            }
-            ?>
+            } ?>
             <div style="margin-bottom:40px">
                 <table cellspacing="0" cellpadding="6" border="1" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;width:100%;font-family:'Helvetica Neue',Helvetica,Roboto,Arial,sans-serif">
                     <thead>
@@ -598,15 +596,14 @@ invoices.', 'bfx-pay-woocommerce'),
                         <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left"><span><?php echo $total['order_total']['value'] ?></span></td>
                     </tr>
                     <?php
-                    if ( $email->id == 'customer_completed_order' ) {
+                    if ($email->id == 'customer_completed_order') {
                         ?>
                         <tr>
                             <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Paid with:</th>
                             <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left"><span><?php echo  $amount.' '.$invoice['payCurrency']?></span></td>
                         </tr>
                         <?php
-                    }
-                    ?>
+                    } ?>
                     </tfoot>
                 </table>
             </div>

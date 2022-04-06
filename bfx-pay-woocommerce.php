@@ -26,7 +26,7 @@ add_action('template_redirect', 'bfx_pay_addtocart_on_archives_redirect_checkout
 add_action('phpmailer_init', 'mailer_config', 10, 1);
 add_action('wp_mail_failed', 'log_mailer_errors', 10, 1);
 
-add_filter('plugin_action_links_' . plugin_basename( __FILE__), 'bfx_pay_settings_link', 10);
+add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'bfx_pay_settings_link', 10);
 add_filter('woocommerce_payment_gateways', 'bfx_pay_add_bfx_payment_gateway_woo');
 add_filter('plugin_row_meta', 'bfx_pay_plugin_row_meta', 10, 3);
 
