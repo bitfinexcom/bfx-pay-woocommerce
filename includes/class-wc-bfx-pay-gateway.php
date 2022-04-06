@@ -249,7 +249,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                     'DOGE' => 'DOGE',
                     'MATIC' => 'MATIC',
                     'MATICM' => 'MATICM',
-                    'AVAX' => 'AVAX'
+                    'AVAX' => 'AVAX',
+                    'EUT-ETH' => 'EUT-ETH'
                 ],
             ],
             'currency' => [
