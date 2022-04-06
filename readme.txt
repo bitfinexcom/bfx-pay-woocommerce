@@ -4,7 +4,7 @@ Tags: bitcoin payments, crypto payments, bitcoin, tether token, bitfinex pay, cr
 Requires at least: 5.0
 Tested up to: 5.8
 Requires PHP: 7.4
-Stable tag: 1.0.5
+Stable tag: 1.1.0
 License: GPLv3
 License URI: https://github.com/bitfinexcom/bfx-pay-woocommerce/blob/main/LICENSE
 
@@ -85,6 +85,14 @@ Note: The maximum invoice amount is $ 1,000 (equivalent).
 
 
 == Changelog ==
+= 1.1.0 =
+* Added support for EURt crypto currency
+* Added linting script (dev purpose)
+* Added settings quick access link in plugins page
+* Removed unnecessary email and adjusted woocommerce emails to include bfx pay invoice details
+* Added ability to include custom texts in "Order received" and "Order processed" emails
+* Fixed fiat currency dropdown to include single select to avoid issues
+
 = 1.0.5 =
 * Added support for EUR, GBP fiat currencies
 * Added support for LTC, SOL, DOGE, MATIC, MATICM, AVAX crypto currencies
