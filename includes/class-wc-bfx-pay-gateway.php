@@ -10,7 +10,7 @@
  * @class       WC_Bfx_Pay_Gateway
  * @extends     WC_Payment_Gateway
  *
- * @version     1.0.0
+ * @version     1.1.1
  */
 class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 {
@@ -43,7 +43,10 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $this->instructions = $this->get_option('instructions');
         $this->complectedInstructions = $this->get_option('complected_instruction');
         $this->buttonType = $this->get_option('button_type');
-        $this->baseApiUrl = $this->get_option('base_api_url') ?? $this->baseApiUrl;
+        $this->baseApiUrl = $this->get_option('base_api_url');
+        if (!$this->baseApiUrl) {
+            $this->baseApiUrl = 'https://api.bitfinex.com/';
+        }
         $this->apiKey = $this->get_option('api_key');
         $this->apiSecret = $this->get_option('api_secret') ?? false;
         $this->checkReqButton = $this->get_option('button_req_checkout');
@@ -397,9 +400,13 @@ invoices.', 'bfx-pay-woocommerce'),
         $woocommerce->cart->empty_cart();
 
         // Return thankyou redirect
+        $redirectUrl = $this->get_option('redirect_url');
+        if (!$redirectUrl) {
+            $redirectUrl = 'https://pay.bitfinex.com/gateway/order/';
+        }
         return [
             'result' => 'success',
-            'redirect' => $this->get_option('redirect_url').$data->id,
+            'redirect' => $redirectUrl.$data->id,
         ];
     }
 
