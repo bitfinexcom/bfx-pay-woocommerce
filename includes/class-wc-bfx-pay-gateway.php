@@ -28,6 +28,10 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
      */
     public function __construct()
     {
+        if ( !session_id() ) {
+            session_start();
+        }
+
         global $woocommerce;
         // Setup general properties.
         $this->setup_properties();
@@ -64,7 +68,6 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         add_filter('woocommerce_add_error', [$this, 'woocommerce_add_error']);
         add_action('wp', [$this, 'bitfinex_cron_activation']);
         add_action('bitfinex_fifteen_min_event', [$this, 'cron_invoice_check']);
-
 
         $baseUrl = $this->baseApiUrl;
         $this->client = new GuzzleHttp\Client([
@@ -311,6 +314,7 @@ invoices.', 'bfx-pay-woocommerce'),
     public function process_payment($order_id)
     {
         global $woocommerce;
+
         $order = new WC_Order($order_id);
         $res = $this->client->get('v2/platform/status');
 
@@ -367,7 +371,6 @@ invoices.', 'bfx-pay-woocommerce'),
             ]);
             $response = $r->getBody()->getContents();
             if ($this->debug) {
-                wc_add_notice($response, 'notice');
                 $logger = wc_get_logger();
                 $logger->info('CREATE INVOICE CALL >> '.wc_print_r($response, true), ['source' => 'bitfinex-pay']);
             }
@@ -389,6 +392,8 @@ invoices.', 'bfx-pay-woocommerce'),
 
         $data = json_decode($response);
 
+        $_SESSION["dataId"] = $data->id;
+
         // Mark as on-hold (we're awaiting the bitfinex payment)
         $order->update_status('on-hold', __('Awaiting bitfinex payment', 'woocommerce'));
 
@@ -400,6 +405,7 @@ invoices.', 'bfx-pay-woocommerce'),
             'result' => 'success',
             'redirect' => $this->get_option('redirect_url').$data->id,
         ];
+
     }
 
     /**
@@ -528,8 +534,9 @@ invoices.', 'bfx-pay-woocommerce'),
     /**
      * New email templates.
      */
-    public function email_template( $order, $sent_to_admin, $plain_text, $email )
+    public function email_template( $order, $sent_to_admin, $sent_from, $email )
     {
+
         $payload = file_get_contents('php://input');
         $data = json_decode($payload, true);
         $invoice = $data['invoices'][0];
@@ -552,7 +559,7 @@ invoices.', 'bfx-pay-woocommerce'),
         }
 
         if ( $email->id == 'customer_completed_order' ) {
-            echo '<p>' . $email->complectedInstructions . '</p>';
+            echo '<p>' . $this->complectedInstructions . '</p>';
         }
 
         if ( $email->id === 'customer_on_hold_order' ) {
@@ -610,6 +617,9 @@ invoices.', 'bfx-pay-woocommerce'),
                 </table>
             </div>
         </div>
+        <span>If you accidentally closed the payment process or want to complete it later, you can access it
+using this link <?php echo  $this->get_option('redirect_url').$_SESSION["dataId"];?>. Please keep in mind that this invoice will expire in <?php echo  date("H\h:i\m");?></span>
+        <span></span>
         <?php
     }
 }
