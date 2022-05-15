@@ -540,12 +540,23 @@ invoices.', 'bfx-pay-woocommerce'),
         $payload = file_get_contents('php://input');
         $data = json_decode($payload, true);
         $invoice = $data['invoices'][0];
+        $poolCurrency = $invoice['poolCurrency'];
         $amount = $invoice['amount'];
         $amount = preg_replace('/0+$/', '', sprintf('%.10f', $amount));
         $product = $order->get_items();
         $subtotal = $order->get_order_item_totals();
         $total = $order->get_order_item_totals();
         $products = '';
+
+        $rin = $this->client->post('/v2/conf/pub:map:currency:explorer');
+        $responsein = $rin->getBody()->getContents();
+        $allCurrencies = json_decode($responsein);
+        $filteredCurrency = array_values(array_filter($allCurrencies[0], function ($currency) use ($poolCurrency) {
+            return $currency[0] === $poolCurrency;
+        }))[0];
+        $address = $filteredCurrency[1][1];
+        $transaction = str_replace('VAL',  $invoice['address'], $address);
+
         foreach ($product as $item) {
             $row ='<tr>
             <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica Neue,Helvetica,Roboto,Arial,sans-serif;word-wrap:break-word">
@@ -574,7 +585,7 @@ invoices.', 'bfx-pay-woocommerce'),
             <?php
             if ( $email->id == 'customer_completed_order' ) {
                 ?>
-                <p style="margin:10px 0 16px; font-weight:bold; display: grid;">Transaction address: <a style="color: #03ca9b"><?php echo $invoice['address']?></a></p>
+                <p style="margin:10px 0 16px; font-weight:bold; display: grid;">Transaction address: <a href="<?php echo $transaction ?>" style="color: #03ca9b"><?php echo $invoice['address']?></a></p>
                 <?php
             }
             ?>
