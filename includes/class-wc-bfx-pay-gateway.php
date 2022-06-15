@@ -10,7 +10,7 @@
  * @class       WC_Bfx_Pay_Gateway
  * @extends     WC_Payment_Gateway
  *
- * @version     1.1.1
+ * @version     1.2.0
  */
 class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 {
@@ -267,6 +267,7 @@ invoices.', 'bfx-pay-woocommerce'),
                     'USD' => 'USD',
                     'EUR' => 'EUR',
                     'GBP' => 'GBP',
+                    'CHF' => 'CHF',
                 ],
             ],
             'duration' => [
