@@ -28,6 +28,10 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
      */
     public function __construct()
     {
+        if ( !session_id() ) {
+            session_start();
+        }
+
         global $woocommerce;
         // Setup general properties.
         $this->setup_properties();
@@ -67,7 +71,6 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         add_filter('woocommerce_add_error', [$this, 'woocommerce_add_error']);
         add_action('wp', [$this, 'bitfinex_cron_activation']);
         add_action('bitfinex_fifteen_min_event', [$this, 'cron_invoice_check']);
-
 
         $baseUrl = $this->baseApiUrl;
         $this->client = new GuzzleHttp\Client([
@@ -316,6 +319,7 @@ invoices.', 'bfx-pay-woocommerce'),
     public function process_payment($order_id)
     {
         global $woocommerce;
+
         $order = new WC_Order($order_id);
         $res = $this->client->get('v2/platform/status');
 
@@ -372,7 +376,6 @@ invoices.', 'bfx-pay-woocommerce'),
             ]);
             $response = $r->getBody()->getContents();
             if ($this->debug) {
-                wc_add_notice($response, 'notice');
                 $logger = wc_get_logger();
                 $logger->info('CREATE INVOICE CALL >> '.wc_print_r($response, true), ['source' => 'bitfinex-pay']);
             }
@@ -394,6 +397,8 @@ invoices.', 'bfx-pay-woocommerce'),
 
         $data = json_decode($response);
 
+        $_SESSION["dataId"] = $data->id;
+
         // Mark as on-hold (we're awaiting the bitfinex payment)
         $order->update_status('on-hold', __('Awaiting bitfinex payment', 'woocommerce'));
 
@@ -409,6 +414,7 @@ invoices.', 'bfx-pay-woocommerce'),
             'result' => 'success',
             'redirect' => $redirectUrl.$data->id,
         ];
+
     }
 
     /**
@@ -539,15 +545,27 @@ invoices.', 'bfx-pay-woocommerce'),
      */
     public function email_template($order, $sent_to_admin, $plain_text, $email)
     {
+
         $payload = file_get_contents('php://input');
         $data = json_decode($payload, true);
         $invoice = $data['invoices'][0];
+        $poolCurrency = $invoice['poolCurrency'];
         $amount = $invoice['amount'];
         $amount = preg_replace('/0+$/', '', sprintf('%.10f', $amount));
         $product = $order->get_items();
         $subtotal = $order->get_order_item_totals();
         $total = $order->get_order_item_totals();
         $products = '';
+
+        $rin = $this->client->post('/v2/conf/pub:map:currency:explorer');
+        $responsein = $rin->getBody()->getContents();
+        $allCurrencies = json_decode($responsein);
+        $filteredCurrency = array_values(array_filter($allCurrencies[0], function ($currency) use ($poolCurrency) {
+            return $currency[0] === $poolCurrency;
+        }))[0];
+        $address = $filteredCurrency[1][1];
+        $transaction = str_replace('VAL',  $invoice['address'], $address);
+
         foreach ($product as $item) {
             $row ='<tr>
             <td style="color:#636363;border:1px solid #e5e5e5;padding:12px;text-align:left;vertical-align:middle;font-family:Helvetica Neue,Helvetica,Roboto,Arial,sans-serif;word-wrap:break-word">
@@ -560,8 +578,8 @@ invoices.', 'bfx-pay-woocommerce'),
             $products .= $row;
         }
 
-        if ($email->id == 'customer_completed_order') {
-            echo '<p>' . $email->complectedInstructions . '</p>';
+        if ( $email->id == 'customer_completed_order' ) {
+            echo '<p>' . $this->complectedInstructions . '</p>';
         }
 
         if ($email->id === 'customer_on_hold_order') {
@@ -575,7 +593,7 @@ invoices.', 'bfx-pay-woocommerce'),
             <?php
             if ($email->id == 'customer_completed_order') {
                 ?>
-                <p style="margin:10px 0 16px; font-weight:bold; display: grid;">Transaction address: <a style="color: #03ca9b"><?php echo $invoice['address']?></a></p>
+                <p style="margin:10px 0 16px; font-weight:bold; display: grid;">Transaction address: <a href="<?php echo $transaction ?>" style="color: #03ca9b"><?php echo $invoice['address']?></a></p>
                 <?php
             } ?>
             <div style="margin-bottom:40px">
@@ -616,6 +634,9 @@ invoices.', 'bfx-pay-woocommerce'),
                 </table>
             </div>
         </div>
+        <span>If you accidentally closed the payment process or want to complete it later, you can access it
+using this link <?php echo  $this->get_option('redirect_url').$_SESSION["dataId"];?>. Please keep in mind that this invoice will expire in <?php echo  date("H\h:i\m");?></span>
+        <span></span>
         <?php
     }
 }
