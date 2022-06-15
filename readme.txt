@@ -4,7 +4,7 @@ Tags: bitcoin payments, crypto payments, bitcoin, tether token, bitfinex pay, cr
 Requires at least: 5.0
 Tested up to: 5.8
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPLv3
 License URI: https://github.com/bitfinexcom/bfx-pay-woocommerce/blob/main/LICENSE
 
@@ -85,6 +85,9 @@ Note: The maximum invoice amount is $ 1,000 (equivalent).
 
 
 == Changelog ==
+= 1.2.0 =
+* Added support for CHF fiat currency
+
 = 1.1.1 =
 * Fixed bug with optional api url and redirect url to payment gateway
 
