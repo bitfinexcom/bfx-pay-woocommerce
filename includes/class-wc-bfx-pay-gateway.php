@@ -551,10 +551,17 @@ invoices.', 'bfx-pay-woocommerce'),
         $poolCurrency = $invoice['poolCurrency'];
         $amount = $invoice['amount'];
         $amount = preg_replace('/0+$/', '', sprintf('%.10f', $amount));
+        $payment = $data['payment'];
         $product = $order->get_items();
         $subtotal = $order->get_order_item_totals();
         $total = $order->get_order_item_totals();
         $products = '';
+
+
+        $rins = $this->client->post('/v2/conf/pub:map:currency:sym');
+        $responseins = $rins->getBody()->getContents();
+        $allCurrenciess = json_encode($responseins);
+        $allCurrenciess1 = json_decode($responseins);
 
         $rin = $this->client->post('/v2/conf/pub:map:currency:explorer');
         $responsein = $rin->getBody()->getContents();
@@ -562,8 +569,8 @@ invoices.', 'bfx-pay-woocommerce'),
         $filteredCurrency = array_values(array_filter($allCurrencies[0], function ($currency) use ($poolCurrency) {
             return $currency[0] === $poolCurrency;
         }))[0];
-        $address = $filteredCurrency[1][1];
-        $transaction = str_replace('VAL',  $invoice['address'], $address);
+        $address = $filteredCurrency[1][2];
+        $transaction = str_replace('VAL',  $payment['txid'], $address);
 
         foreach ($product as $item) {
             $row ='<tr>
@@ -587,12 +594,13 @@ invoices.', 'bfx-pay-woocommerce'),
 
         <div style="color:#636363;font-family:&quot;Helvetica Neue&quot;,Helvetica,Robot,Arial,sans-serif;font-size:14px;line-height:150%;text-align:left">
 
+
             <h2 style="color:#96588a;display:block;font-family:&quot;Helvetica Neue&quot;,Helvetica,Roboto,Arial,sans-serif;font-size:18px;font-weight:bold;line-height:130%;margin:0 0 18px;text-align:left">
                 [Order # <?php echo$order->id; ?>] (<?php echo substr($order->date_created, 0, 10); ?>)</h2>
             <?php
             if ($email->id == 'customer_completed_order') {
                 ?>
-                <p style="margin:10px 0 16px; font-weight:bold; display: grid;">Transaction address: <a href="<?php echo $transaction ?>" style="color: #03ca9b"><?php echo $invoice['address']?></a></p>
+                <p style="margin:10px 0 16px; font-weight:bold; display: grid;">Transaction address: <a href="<?php echo $transaction ?>" style="color: #03ca9b"><?php echo $payment['txid']?></a></p>
                 <?php
             } ?>
             <div style="margin-bottom:40px">
@@ -613,7 +621,7 @@ invoices.', 'bfx-pay-woocommerce'),
                         <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left;border-top-width:4px"><span><?php echo $subtotal['cart_subtotal']['value'] ?></span></td>
                     </tr>
                     <tr>
-                        <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Payment method:</th>
+                        <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Bitfinex Pay:</th>
                         <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left"><?php echo $this->title ?></td>
                     </tr>
                     <tr>
@@ -633,9 +641,11 @@ invoices.', 'bfx-pay-woocommerce'),
                 </table>
             </div>
         </div>
-        <span>If you accidentally closed the payment process or want to complete it later, you can access it
-using this link <?php echo  $this->get_option('redirect_url').$_SESSION["dataId"];?>. Please keep in mind that this invoice will expire in <?php echo  date("H\h:i\m");?></span>
-        <span></span>
         <?php
+        if ($email->id === 'customer_on_hold_order') { ?>
+        <span>If you accidentally closed the payment process or want to complete it later, you can access it
+using this <a href="<?php echo  $this->get_option('redirect_url').$_SESSION["dataId"];?>">link</a>. Please keep in mind that this invoice will expire in <?php echo  date("H\h:i\m");?></span>
+        <span></span>
+        <?php }
     }
 }
