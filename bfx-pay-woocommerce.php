@@ -30,6 +30,12 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'bfx_pay_settings
 add_filter('woocommerce_payment_gateways', 'bfx_pay_add_bfx_payment_gateway_woo');
 add_filter('plugin_row_meta', 'bfx_pay_plugin_row_meta', 10, 3);
 
+add_filter('pre_option_woocommerce_currency_pos', 'currency_position');
+
+function currency_position () {
+    return 'right_space';
+}
+
 function bfx_pay_settings_link($links): array
 {
     $custom['settings'] = sprintf(
