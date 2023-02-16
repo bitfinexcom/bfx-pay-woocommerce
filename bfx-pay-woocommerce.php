@@ -32,7 +32,8 @@ add_filter('plugin_row_meta', 'bfx_pay_plugin_row_meta', 10, 3);
 
 add_filter('pre_option_woocommerce_currency_pos', 'currency_position');
 
-function currency_position () {
+function currency_position()
+{
     return 'right_space';
 }
 

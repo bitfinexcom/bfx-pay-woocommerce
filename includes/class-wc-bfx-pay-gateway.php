@@ -28,7 +28,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
      */
     public function __construct()
     {
-        if ( !session_id() ) {
+        if (!session_id()) {
             session_start();
         }
 
@@ -414,7 +414,6 @@ invoices.', 'bfx-pay-woocommerce'),
             'result' => 'success',
             'redirect' => $redirectUrl.$data->id,
         ];
-
     }
 
     /**
@@ -545,7 +544,6 @@ invoices.', 'bfx-pay-woocommerce'),
      */
     public function email_template($order, $sent_to_admin, $plain_text, $email)
     {
-
         $payload = file_get_contents('php://input');
         $data = json_decode($payload, true);
         $invoice = $data['invoices'][0];
@@ -571,7 +569,7 @@ invoices.', 'bfx-pay-woocommerce'),
             return $currency[0] === $poolCurrency;
         }))[0];
         $address = $filteredCurrency[1][2];
-        $transaction = str_replace('VAL',  $payment['txid'], $address);
+        $transaction = str_replace('VAL', $payment['txid'], $address);
 
         foreach ($product as $item) {
             $row ='<tr>
@@ -585,7 +583,7 @@ invoices.', 'bfx-pay-woocommerce'),
             $products .= $row;
         }
 
-        if ( $email->id == 'customer_completed_order' ) {
+        if ($email->id == 'customer_completed_order') {
             echo '<p>' . $this->complectedInstructions . '</p>';
         }
 
@@ -648,5 +646,5 @@ invoices.', 'bfx-pay-woocommerce'),
 using this <a href="<?php echo  $this->get_option('redirect_url').$_SESSION["dataId"];?>">link</a>. Please keep in mind that this invoice will expire in <?php echo  date("H\h:i\m");?></span>
         <span></span>
         <?php }
-    }
+        }
 }
