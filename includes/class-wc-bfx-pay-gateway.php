@@ -10,7 +10,7 @@
  * @class       WC_Bfx_Pay_Gateway
  * @extends     WC_Payment_Gateway
  *
- * @version     1.2.0
+ * @version     2.0.0
  */
 class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 {
@@ -22,16 +22,29 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     public $baseApiUrl = 'https://api.bitfinex.com/';
     public $apiKey;
     public $apiSecret;
+    public $isEnabled;
+    public $title;
+    public $description;
+    public $instructions;
+    public $complectedInstructions;
+    public $buttonType;
+    public $checkReqButton;
+    public $payCurrencies;
+    public $duration;
+    public $icon;
+    public $client;
+    public $id;
+    public $method_title;
+    public $method_description;
+    public $has_fields;
+    public $debug;
+    public $form_fields;
 
     /**
      * Constructor for the gateway.
      */
     public function __construct()
     {
-        if (!session_id()) {
-            session_start();
-        }
-
         global $woocommerce;
         // Setup general properties.
         $this->setup_properties();
@@ -243,20 +256,20 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 'type' => 'multiselect',
                 'default' => 'BTC',
                 'options' => [
-                    'BTC' => 'BTC',
-                    'ETH' => 'ETH',
-                    'UST-ETH' => 'UST-ETH',
-                    'UST-TRX' => 'UST-TRX',
-                    'UST-LBT' => 'UST-LBT',
-                    'LBT' => 'LBT',
-                    'LNX' => 'LNX',
-                    'LTC' => 'LTC',
-                    'SOL' => 'SOL',
-                    'DOGE' => 'DOGE',
-                    'MATIC' => 'MATIC',
-                    'MATICM' => 'MATICM',
-                    'AVAX' => 'AVAX',
-                    'EUT-ETH' => 'EUT-ETH'
+                    'BTC' => 'Bitcoin',
+                    'LNX' => 'Bitcoin - Lightning',
+                    'LBT' => 'Bitcoin - Liquid',
+                    'LTC' => 'Litecoin',
+                    'ETH' => 'Ethereum',
+                    'UST-ETH' => 'Tether USDt - Ethereum',
+                    'UST-TRX' => 'Tether USDt - Tron',
+                    'UST-PLY' => 'Tether USDt - Polygon',
+                    'UST-LBT' => 'Tether USDt - Liquid',
+                    'EUT-ETH' => 'Tether EURt - Ethereum',
+                    'AVAX' => 'Avalanche',
+                    'DOGE' => 'Dogecoin',
+                    'MATICM' => 'MATIC - Mainnet',
+                    'MATIC' => 'MATIC - Ethereum'
                 ],
             ],
             'currency' => [
@@ -302,8 +315,6 @@ invoices.', 'bfx-pay-woocommerce'),
      */
     public function payment_fields()
     {
-        global $woocommerce;
-        $order = new WC_Order($order_id);
         echo wpautop(wp_kses_post($this->description));
     }
 
@@ -323,7 +334,7 @@ invoices.', 'bfx-pay-woocommerce'),
         $order = new WC_Order($order_id);
         $res = $this->client->get('v2/platform/status');
 
-        if (1 != $res->getBody()) {
+        if (1 !== json_decode($res->getBody()->getContents())[0]) {
             throw new Exception(sprintf('This payment method is currently unavailable. Try again later or choose another one'));
         }
         $apiKey = $this->apiKey;
@@ -397,7 +408,8 @@ invoices.', 'bfx-pay-woocommerce'),
 
         $data = json_decode($response);
 
-        $_SESSION["dataId"] = $data->id;
+        $order->update_meta_data('bitfinex_invoice_id', $data->id);
+        $order->save_meta_data();
 
         // Mark as on-hold (we're awaiting the bitfinex payment)
         $order->update_status('on-hold', __('Awaiting bitfinex payment', 'woocommerce'));
@@ -497,9 +509,6 @@ invoices.', 'bfx-pay-woocommerce'),
         ob_start();
 
         $order->payment_complete();
-        $to = $order->get_billing_email();
-
-        wp_mail($to);
 
         if ($this->debug) {
             update_option('webhook_debug', $payload);
@@ -544,32 +553,49 @@ invoices.', 'bfx-pay-woocommerce'),
      */
     public function email_template($order, $sent_to_admin, $plain_text, $email)
     {
-        $payload = file_get_contents('php://input');
-        $data = json_decode($payload, true);
-        $invoice = $data['invoices'][0];
-        $poolCurrency = $invoice['poolCurrency'];
-        $amount = $invoice['amount'];
-        $amount = preg_replace('/0+$/', '', sprintf('%.10f', $amount));
-        $payment = $data['payment'];
+        $order->read_meta_data(true);
+        $metadata = $order->get_meta_data();
+        $invoiceId = null;
+        foreach ($metadata as &$entry) {
+            $data = $entry->get_data();
+
+            if ($data['key'] === 'bitfinex_invoice_id') {
+                $invoiceId = $data['value'];
+            }
+        }
+        if (!$invoiceId) {
+            return;
+        }
+
+        $body = [
+            'id' => $invoiceId
+        ];
+        $bodyJson = json_encode($body, JSON_UNESCAPED_SLASHES);
+
+        $headers = [
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+        ];
+        $r = $this->client->post('v2/ext/pay/invoice', [
+            'headers' => $headers,
+            'body' => $bodyJson,
+        ]);
+        $response = $r->getBody()->getContents();
+        $data = json_decode($response, true);
+
+        $payment = null;
+        $amount = null;
+
+        if ($email->id == 'customer_completed_order') {
+            $payment = $data['payment'];
+            $amount = $payment['amount'];
+            $amount = preg_replace('/0+$/', '', sprintf('%.10f', $amount));
+        }
+
         $product = $order->get_items();
         $subtotal = $order->get_order_item_totals();
         $total = $order->get_order_item_totals();
         $products = '';
-
-
-        $rins = $this->client->post('/v2/conf/pub:map:currency:sym');
-        $responseins = $rins->getBody()->getContents();
-        $allCurrenciess = json_encode($responseins);
-        $allCurrenciess1 = json_decode($responseins);
-
-        $rin = $this->client->post('/v2/conf/pub:map:currency:explorer');
-        $responsein = $rin->getBody()->getContents();
-        $allCurrencies = json_decode($responsein);
-        $filteredCurrency = array_values(array_filter($allCurrencies[0], function ($currency) use ($poolCurrency) {
-            return $currency[0] === $poolCurrency;
-        }))[0];
-        $address = $filteredCurrency[1][2];
-        $transaction = str_replace('VAL', $payment['txid'], $address);
 
         foreach ($product as $item) {
             $row ='<tr>
@@ -599,7 +625,7 @@ invoices.', 'bfx-pay-woocommerce'),
             <?php
             if ($email->id == 'customer_completed_order') {
                 ?>
-                <p style="margin:10px 0 16px; font-weight:bold; display: grid;">Transaction address: <a href="<?php echo $transaction ?>" style="color: #03ca9b"><?php echo $payment['txid']?></a></p>
+                <p style="margin:10px 0 16px; font-weight:bold; display: grid;">Transaction id: <span style="color: #03ca9b"><?php echo $payment['txid']?></span></p>
                 <?php
             } ?>
             <div style="margin-bottom:40px">
@@ -632,7 +658,7 @@ invoices.', 'bfx-pay-woocommerce'),
                         ?>
                         <tr>
                             <th scope="row" colspan="2" style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left">Paid with:</th>
-                            <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left"><span><?php echo  $amount.' '.$invoice['payCurrency']?></span></td>
+                            <td style="color:#636363;border:1px solid #e5e5e5;vertical-align:middle;padding:12px;text-align:left"><span><?php echo  $amount.' '.$payment['currency']?></span></td>
                         </tr>
                         <?php
                     } ?>
@@ -643,7 +669,7 @@ invoices.', 'bfx-pay-woocommerce'),
         <?php
         if ($email->id === 'customer_on_hold_order') { ?>
         <span>If you accidentally closed the payment process or want to complete it later, you can access it
-using this <a href="<?php echo  $this->get_option('redirect_url').$_SESSION["dataId"];?>">link</a>. Please keep in mind that this invoice will expire in <?php echo  date("H\h:i\m");?></span>
+using this <a href="<?php echo  $this->get_option('redirect_url').$invoiceId;?>">link</a>. Please keep in mind that this invoice will expire in <?php echo  date("H\h:i\m");?></span>
         <span></span>
         <?php }
         }
