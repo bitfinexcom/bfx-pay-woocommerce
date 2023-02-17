@@ -3,8 +3,8 @@ Contributors: bitfinex, viganabd
 Tags: bitcoin payments, crypto payments, bitcoin, tether token, bitfinex pay, cryptocurrency pay, pay with bitcoin, ethereum payments, tether payments
 Requires at least: 6.0
 Tested up to: 6.1.1
-Requires PHP: 8.0
-Stable tag: 2.0.0
+Requires PHP: 7.4
+Stable tag: 2.0.1
 License: GPLv3
 License URI: https://github.com/bitfinexcom/bfx-pay-woocommerce/blob/main/LICENSE
 
@@ -85,6 +85,9 @@ Note: The maximum invoice amount is $ 1,000 (equivalent).
 
 
 == Changelog ==
+= 2.0.1 =
+* Fixed support for php 7.4
+
 = 2.0.0 =
 * Migrated to PHP 8
 * Migrated to WP 6
