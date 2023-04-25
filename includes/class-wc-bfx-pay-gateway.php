@@ -10,7 +10,7 @@
  * @class       WC_Bfx_Pay_Gateway
  * @extends     WC_Payment_Gateway
  *
- * @version     2.0.1
+ * @version     2.0.2
  */
 class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 {
@@ -69,6 +69,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $this->checkReqButton = $this->get_option('button_req_checkout');
         $this->payCurrencies = $this->get_option('pay_currencies');
         $this->duration = $this->get_option('duration') ?? 86399;
+        $this->debug = ('yes' === $this->get_option('debug'));
 
         // Checking which button theme selected and outputing relevated.
         $this->icon = ('Light' === $this->buttonType) ? apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-white.svg', __FILE__)) : apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-dark.svg', __FILE__));
@@ -153,7 +154,6 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $this->method_title = __('Bitfinex Payment', 'bitfinex-pay');
         $this->method_description = __('Bitfinex Payment', 'bitfinex-pay');
         $this->has_fields = true;
-        $this->debug = ('yes' === $this->get_option('debug'));
     }
 
     /**
