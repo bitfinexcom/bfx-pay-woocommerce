@@ -165,7 +165,6 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
      */
     protected function update_order_status($order, $status)
     {
-        error_log($status);
         if ($status === 'completed') {
             ob_start();
             $order->payment_complete();
