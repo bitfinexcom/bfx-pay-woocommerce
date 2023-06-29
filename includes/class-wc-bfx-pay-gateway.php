@@ -39,6 +39,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     public $has_fields;
     public $debug;
     public $form_fields;
+    public $orderStatusCompleted;
+    public $orderStatusExpired;
 
     /**
      * Constructor for the gateway.
@@ -70,6 +72,8 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $this->payCurrencies = $this->get_option('pay_currencies');
         $this->duration = $this->get_option('duration') ?? 86399;
         $this->debug = ('yes' === $this->get_option('debug'));
+        $this->orderStatusCompleted = $this->get_option('order_status_completed', 'completed');
+        $this->orderStatusExpired = $this->get_option('order_status_expired', 'failed');
 
         // Checking which button theme selected and outputing relevated.
         $this->icon = ('Light' === $this->buttonType) ? apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-white.svg', __FILE__)) : apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-dark.svg', __FILE__));
@@ -157,6 +161,22 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
     }
 
     /**
+     * Update order status
+     */
+    protected function update_order_status($order, $status)
+    {
+        error_log($status);
+        if ($status === 'completed') {
+            ob_start();
+            $order->payment_complete();
+            ob_clean();
+        } else {
+            $order->update_status($status);
+        }
+    }
+
+
+    /**
      * Initialise Gateway Settings Form Fields.
      */
     public function init_form_fields()
@@ -236,7 +256,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             ],
             'button_req_checkout' => [
                 'title' => __('Enable/Disable one click checkout button for products', 'bitfinex-pay'),
-                'label' => __('Enable', 'bitfinex-pay'),
+                'label' => __('Enable', 'bitfinex-pay'),'completed' => 'Completed',
                 'type' => 'checkbox',
                 'description' => '',
                 'default' => 'no',
@@ -286,6 +306,29 @@ invoices.', 'bfx-pay-woocommerce'),
                     'CHF' => 'CHF',
                 ],
             ],
+            'order_status_completed' => [
+                'title' => __('Order Status Completed Rule', 'bitfinex-pay'),
+                'description' => __('Order status rules completed', 'bfx-pay-woocommerce'),
+                'desc_tip' => true,
+                'type' => 'select',
+                'default' => 'completed',
+                'options' => [
+                    'processing' => 'Processing',
+                    'completed' => 'Completed'
+                ],
+            ],
+            'order_status_expired' => [
+                'title' => __('Order Status Expired Rule', 'bitfinex-pay'),
+                'description' => __('Order status rules completed', 'bfx-pay-woocommerce'),
+                'desc_tip' => true,
+                'type' => 'select',
+                'default' => 'failed',
+                'options' => [
+                    'failed' => 'Failed',
+                    'processing' => 'Processing',
+                    'on-hold' => 'On Hold'
+                ],
+            ],
             'duration' => [
                 'title' => __('Duration: sec', 'bitfinex-pay'),
                 'label' => __('sec', 'bitfinex-pay'),
@@ -333,7 +376,6 @@ invoices.', 'bfx-pay-woocommerce'),
 
         $order = new WC_Order($order_id);
         $res = $this->client->get('v2/platform/status');
-
         if (1 !== json_decode($res->getBody()->getContents())[0]) {
             throw new Exception(sprintf('This payment method is currently unavailable. Try again later or choose another one'));
         }
@@ -410,7 +452,6 @@ invoices.', 'bfx-pay-woocommerce'),
 
         $order->update_meta_data('bitfinex_invoice_id', $data->id);
         $order->save_meta_data();
-
         // Mark as on-hold (we're awaiting the bitfinex payment)
         $order->update_status('on-hold', __('Awaiting bitfinex payment', 'woocommerce'));
 
@@ -475,9 +516,11 @@ invoices.', 'bfx-pay-woocommerce'),
                     }
                     if ('on-hold' === $order->get_status()) {
                         if ('COMPLETED' === $invoice->status) {
-                            $order->payment_complete();
+                            $this->update_order_status($order, $this->orderStatusCompleted);
                         } elseif ('PENDING' === $invoice->status) {
                             $order->update_status('on-hold');
+                        } elseif ('EXPIRED' === $invoice->status) {
+                            $this->update_order_status($order, $this->orderStatusExpired);
                         } else {
                             $order->update_status('failed');
                         }
@@ -501,21 +544,23 @@ invoices.', 'bfx-pay-woocommerce'),
         $payload = file_get_contents('php://input');
         $data = json_decode($payload, true);
         $order = wc_get_order($data['orderId']);
-        if ('COMPLETED' !== $data['status']) {
-            $order->update_status('failed');
 
+        if ('COMPLETED' === $data['status']) {
+            $this->update_order_status($order, $this->orderStatusCompleted);
+        } elseif ('EXPIRED' === $data['status']) {
+            $this->update_order_status($order, $this->orderStatusExpired);
+            return;
+        } else {
+            $this->update_order_status($order, 'failed');
             return;
         }
-        ob_start();
-
-        $order->payment_complete();
 
         if ($this->debug) {
             update_option('webhook_debug', $payload);
             $logger = wc_get_logger();
             $logger->info('WEBHOOK CALL >> '.wc_print_r($payload, true), ['source' => 'bitfinex-pay']);
         }
-        ob_clean();
+
         status_header(200);
         echo 'true';
         exit();
