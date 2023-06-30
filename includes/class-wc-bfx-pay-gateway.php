@@ -74,7 +74,6 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         // Checking which button theme selected and outputing relevated.
         $this->icon = ('Light' === $this->buttonType) ? apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-white.svg', __FILE__)) : apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-dark.svg', __FILE__));
         add_action('woocommerce_update_options_payment_gateways_'.$this->id, [$this, 'process_admin_options']);
-        add_filter('woocommerce_payment_complete_order_status', [$this, 'change_payment_complete_order_status'], 10, 3);
         // Customer Emails.
         add_action('woocommerce_email_order_details', [$this, 'remove_order_details'], 1, 4);
         add_action('woocommerce_email_order_details', [$this, 'email_template'], 20, 4);
@@ -154,6 +153,35 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $this->method_title = __('Bitfinex Payment', 'bitfinex-pay');
         $this->method_description = __('Bitfinex Payment', 'bitfinex-pay');
         $this->has_fields = true;
+    }
+    /**
+     * General function to update order status
+     *
+     * @param object $order WC Order
+     * @param string $payment_status Status of the payment
+     *
+     * @return bool true if known status, false for unknown status
+     */
+    protected function update_order_status($order, $payment_status)
+    {
+        if ('COMPLETED' === $payment_status) {
+            ob_start();
+            $order->payment_complete();
+            ob_clean();
+            return true;
+        }
+
+        if ('PENDING' === $payment_status) {
+            $order->update_status('on-hold');
+            return true;
+        }
+
+        if ('EXPIRED' === $payment_status) {
+            $order->update_status('failed');
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -474,13 +502,7 @@ invoices.', 'bfx-pay-woocommerce'),
                         continue;
                     }
                     if ('on-hold' === $order->get_status()) {
-                        if ('COMPLETED' === $invoice->status) {
-                            $order->payment_complete();
-                        } elseif ('PENDING' === $invoice->status) {
-                            $order->update_status('on-hold');
-                        } else {
-                            $order->update_status('failed');
-                        }
+                        $this->update_order_status($order, $invoice->status);
                     }
                 }
             } catch (\Throwable $exin) {
@@ -501,42 +523,20 @@ invoices.', 'bfx-pay-woocommerce'),
         $payload = file_get_contents('php://input');
         $data = json_decode($payload, true);
         $order = wc_get_order($data['orderId']);
-        if ('COMPLETED' !== $data['status']) {
-            $order->update_status('failed');
-
-            return;
-        }
-        ob_start();
-
-        $order->payment_complete();
 
         if ($this->debug) {
-            update_option('webhook_debug', $payload);
             $logger = wc_get_logger();
             $logger->info('WEBHOOK CALL >> '.wc_print_r($payload, true), ['source' => 'bitfinex-pay']);
         }
-        ob_clean();
-        status_header(200);
-        echo 'true';
-        exit();
-    }
 
-    /**
-     * Change payment complete order status to completed for Вitfinex payments method orders.
-     *
-     * @param string         $status   current order status
-     * @param int            $order_id order ID
-     * @param WC_Order|false $order    order object
-     *
-     * @return string
-     */
-    public function change_payment_complete_order_status($status, $order_id = 0, $order = false)
-    {
-        if ($order && 'bfx_payment' === $order->get_payment_method()) {
-            $status = 'completed';
+        $is_success = $this->update_order_status($order, $data['status']);
+
+        if ($is_success) {
+            status_header(200);
+            echo 'true';
         }
 
-        return $status;
+        exit();
     }
 
     /**

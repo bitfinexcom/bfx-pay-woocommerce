@@ -27,8 +27,8 @@ _Bitfinex Pay is available only to Eligible Merchants (as defined in the terms o
 - **A wide choice of cryptocurrencies** - Bitfinex Pay offers various cryptocurrencies such as Bitcoin, Ethereum, Tether tokens (USDt), Bitcoin via the Lightning Network and more to follow.
 - **No additional processing fees** - Bitfinex Pay services come with no additional processing or hidden fees. Check out Bitfinex Pay terms for incurring transaction fees on the network that merchants should be aware of.
 - **Swift process** - Upon successful transactions, you will generally receive the payment in your wallet within minutes.
-- **Very intuitive** - Bitfinex Pay’s interface is very intuitive, making it easy to navigate by all kinds of customers. 
-- **Backed with Bitfinex’s technology & reputation** - As one of the pioneers in the industry, Bitfinex has an impeccable track record of providing services to our users and the crypto community at large. 
+- **Very intuitive** - Bitfinex Pay’s interface is very intuitive, making it easy to navigate by all kinds of customers.
+- **Backed with Bitfinex’s technology & reputation** - As one of the pioneers in the industry, Bitfinex has an impeccable track record of providing services to our users and the crypto community at large.
 
 
 == Installation ==
@@ -41,7 +41,7 @@ Additional information can be found in https://github.com/bitfinexcom/bfx-pay-wo
 = How does Bitfinex Pay work? =
 - Your customers click the Bitfinex Pay button on your product page when checking out.
 - Upon clicking, they will be directed to the Bitfinex payment gateway page. (This page contains your customers’ order details.)
-- The countdown shows the remaining amount of time to complete the payment. 
+- The countdown shows the remaining amount of time to complete the payment.
 - Your customers will be redirected back to your website upon successful payment.
 
 Note: Customers making payments do not have to be Bitfinex users. If your customer is a Bitfinex user, they can log in via the Pay with Bitfinex button, and it will be considered an internal transfer within Bitfinex; the transaction will not be broadcast on the blockchain and will therefore also be faster than on-chain transactions.
@@ -72,6 +72,11 @@ An invoice will have different statuses, starting from when the invoice is creat
 - Pending: A deposit is pending confirmation to your account (for information on cryptocurrency deposit times, please view Where is my cryptocurrency deposit or withdrawal?);
 - Completed: A deposit has been completed, and the payment amount and invoice amount was exactly matched;
 - Expired: An invoice payment time has expired, meaning that the funds were not deposited in the required countdown period provided.
+
+= Why my order status is set to completed/processing after payment completed? =
+This is a standard behaviour from WooCommerce.
+Most of the time payment completed should mark an order as 'processing' so that admin can process/post the items. If the cart contains only downloadable items then the order is 'completed' since the admin needs to take no action.
+Additional information can be found in https://woocommerce.wp-a2z.org/oik_api/wc_orderpayment_complete/
 
 = What are the invoice limitation amounts? =
 
