@@ -74,7 +74,6 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         // Checking which button theme selected and outputing relevated.
         $this->icon = ('Light' === $this->buttonType) ? apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-white.svg', __FILE__)) : apply_filters('woocommerce_bfx_icon', plugins_url('../assets/img/bfx-pay-dark.svg', __FILE__));
         add_action('woocommerce_update_options_payment_gateways_'.$this->id, [$this, 'process_admin_options']);
-        add_filter('woocommerce_payment_complete_order_status', [$this, 'change_payment_complete_order_status'], 10, 3);
         // Customer Emails.
         add_action('woocommerce_email_order_details', [$this, 'remove_order_details'], 1, 4);
         add_action('woocommerce_email_order_details', [$this, 'email_template'], 20, 4);
@@ -519,24 +518,6 @@ invoices.', 'bfx-pay-woocommerce'),
         status_header(200);
         echo 'true';
         exit();
-    }
-
-    /**
-     * Change payment complete order status to completed for Вitfinex payments method orders.
-     *
-     * @param string         $status   current order status
-     * @param int            $order_id order ID
-     * @param WC_Order|false $order    order object
-     *
-     * @return string
-     */
-    public function change_payment_complete_order_status($status, $order_id = 0, $order = false)
-    {
-        if ($order && 'bfx_payment' === $order->get_payment_method()) {
-            $status = 'completed';
-        }
-
-        return $status;
     }
 
     /**
