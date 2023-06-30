@@ -155,6 +155,28 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $this->has_fields = true;
     }
 
+    protected function update_order_status($order, $payment_status)
+    {
+        if ('COMPLETED' === $payment_status) {
+            ob_start();
+            $order->payment_complete();
+            ob_clean();
+            return true;
+        }
+
+        if ('PENDING' === $payment_status) {
+            $order->update_status('on-hold');
+            return false;
+        }
+
+        if ('EXPIRED' === $payment_status) {
+            $order->update_status('failed');
+            return false;
+        }
+
+        return false;
+    }
+
     /**
      * Initialise Gateway Settings Form Fields.
      */
@@ -473,13 +495,7 @@ invoices.', 'bfx-pay-woocommerce'),
                         continue;
                     }
                     if ('on-hold' === $order->get_status()) {
-                        if ('COMPLETED' === $invoice->status) {
-                            $order->payment_complete();
-                        } elseif ('PENDING' === $invoice->status) {
-                            $order->update_status('on-hold');
-                        } else {
-                            $order->update_status('failed');
-                        }
+                        $this->update_order_status($order, $invoice->status);
                     }
                 }
             } catch (\Throwable $exin) {
@@ -500,23 +516,19 @@ invoices.', 'bfx-pay-woocommerce'),
         $payload = file_get_contents('php://input');
         $data = json_decode($payload, true);
         $order = wc_get_order($data['orderId']);
-        if ('COMPLETED' !== $data['status']) {
-            $order->update_status('failed');
-
-            return;
-        }
-        ob_start();
-
-        $order->payment_complete();
 
         if ($this->debug) {
-            update_option('webhook_debug', $payload);
             $logger = wc_get_logger();
             $logger->info('WEBHOOK CALL >> '.wc_print_r($payload, true), ['source' => 'bitfinex-pay']);
         }
-        ob_clean();
-        status_header(200);
-        echo 'true';
+
+        $is_completed = $this->update_order_status($order, $data['status']);
+
+        if ($is_completed) {
+            status_header(200);
+            echo 'true';
+        }
+
         exit();
     }
 
