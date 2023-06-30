@@ -154,7 +154,14 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $this->method_description = __('Bitfinex Payment', 'bitfinex-pay');
         $this->has_fields = true;
     }
-
+    /**
+     * General function to update order status
+     *
+     * @param object $order WC Order
+     * @param string $payment_status Status of the payment
+     *
+     * @return bool true if known status, false for unknown status
+     */
     protected function update_order_status($order, $payment_status)
     {
         if ('COMPLETED' === $payment_status) {
@@ -166,12 +173,12 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 
         if ('PENDING' === $payment_status) {
             $order->update_status('on-hold');
-            return false;
+            return true;
         }
 
         if ('EXPIRED' === $payment_status) {
             $order->update_status('failed');
-            return false;
+            return true;
         }
 
         return false;
