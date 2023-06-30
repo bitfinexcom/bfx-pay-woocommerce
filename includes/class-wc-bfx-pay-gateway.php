@@ -529,9 +529,9 @@ invoices.', 'bfx-pay-woocommerce'),
             $logger->info('WEBHOOK CALL >> '.wc_print_r($payload, true), ['source' => 'bitfinex-pay']);
         }
 
-        $is_completed = $this->update_order_status($order, $data['status']);
+        $is_success = $this->update_order_status($order, $data['status']);
 
-        if ($is_completed) {
+        if ($is_success) {
             status_header(200);
             echo 'true';
         }
