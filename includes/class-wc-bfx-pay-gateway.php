@@ -255,7 +255,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             ],
             'button_req_checkout' => [
                 'title' => __('Enable/Disable one click checkout button for products', 'bitfinex-pay'),
-                'label' => __('Enable', 'bitfinex-pay'),'completed' => 'Completed',
+                'label' => __('Enable', 'bitfinex-pay'),
                 'type' => 'checkbox',
                 'description' => '',
                 'default' => 'no',
