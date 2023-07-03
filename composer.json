@@ -6,6 +6,11 @@
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.14"
     },
+    "config": {
+        "platform": {
+            "php": "7.4.0"
+        }
+    },
     "scripts": {
         "lint": "php-cs-fixer fix bfx-pay-woocommerce.php && php-cs-fixer fix includes"
     }
