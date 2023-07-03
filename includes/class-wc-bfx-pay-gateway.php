@@ -79,11 +79,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         add_action('woocommerce_email_order_details', [$this, 'email_template'], 20, 4);
         add_action('woocommerce_api_bitfinex', [$this, 'webhook']);
 
-        // Cron
-        add_filter('cron_schedules', [$this, 'cron_add_fifteen_min']);
         add_filter('woocommerce_add_error', [$this, 'woocommerce_add_error']);
-        add_action('wp', [$this, 'bitfinex_cron_activation']);
-        add_action('bitfinex_fifteen_min_event', [$this, 'cron_invoice_check']);
 
         $baseUrl = $this->baseApiUrl;
         $this->client = new GuzzleHttp\Client([
@@ -121,26 +117,6 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         }
 
         return 'Internal server error, please try again later';
-    }
-
-    /**
-     * Cron.
-     */
-    public function cron_add_fifteen_min($schedules)
-    {
-        $schedules['fifteen_min'] = [
-            'interval' => 60 * 15,
-            'display' => 'Bitfinex cron',
-        ];
-
-        return $schedules;
-    }
-
-    public function bitfinex_cron_activation()
-    {
-        if (!wp_next_scheduled('bitfinex_fifteen_min_event')) {
-            wp_schedule_event(time(), 'fifteen_min', 'bitfinex_fifteen_min_event');
-        }
     }
 
     /**
@@ -510,6 +486,10 @@ invoices.', 'bfx-pay-woocommerce'),
      */
     public function cron_invoice_check()
     {
+        if ($this->debug) {
+            $logger = wc_get_logger();
+            $logger->info('BEGIN CRON INVOICE CHECK', ['source' => 'bitfinex-pay']);
+        }
         $now = round(microtime(true) * 1000);
         $end = $now;
         while ($end > $now - (60 * 60000) * 25) {
@@ -518,7 +498,6 @@ invoices.', 'bfx-pay-woocommerce'),
             try {
                 $responsein = $this->get_bfx_invoices($start, $end);
                 if ($this->debug) {
-                    wc_add_notice($responsein, 'notice');
                     $logger = wc_get_logger();
                     $logger->info('CRON READ INVOICE CALL >> '.wc_print_r($responsein, true), ['source' => 'bitfinex-pay']);
                 }
