@@ -588,7 +588,6 @@ invoices.', 'bfx-pay-woocommerce'),
      */
     public function email_template($order, $sent_to_admin, $plain_text, $email)
     {
-        $order->read_meta_data(true);
         $invoiceId = get_post_meta($order->id, 'bitfinex_invoice_id', true);
 
         if (!$invoiceId) {
