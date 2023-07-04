@@ -184,19 +184,12 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         return false;
     }
 
-    protected function get_bfx_invoices($start, $end)
-    {
-        $apiPathin = 'v2/auth/r/ext/pay/invoices';
+    protected function bfx_request($path, $body) {
         $apiKey = $this->apiKey;
         $apiSecret = $this->apiSecret;
         $nonce = (string) (time() * 1000 * 1000); // epoch in ms * 1000
-        $bodyin = [
-            'start' => $start,
-            'end' => $end,
-            'limit' => 100,
-        ];
-        $bodyJsonin = json_encode($bodyin, JSON_UNESCAPED_SLASHES);
-        $signaturein = "/api/{$apiPathin}{$nonce}{$bodyJsonin}";
+        $bodyJsonin = json_encode($body, JSON_UNESCAPED_SLASHES);
+        $signaturein = "/api/{$path}{$nonce}{$bodyJsonin}";
         $sigin = hash_hmac('sha384', $signaturein, $apiSecret);
         $headersin = [
             'Content-Type' => 'application/json',
@@ -205,8 +198,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
             'bfx-apikey' => $apiKey,
             'bfx-signature' => $sigin,
         ];
-
-        $rin = $this->client->post($apiPathin, [
+        $rin = $this->client->post($path, [
             'headers' => $headersin,
             'body' => $bodyJsonin,
         ]);
@@ -214,23 +206,27 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         return $responsein;
     }
 
+    protected function get_bfx_invoices($start, $end)
+    {
+        $apiPathin = 'v2/auth/r/ext/pay/invoices';
+        $bodyin = [
+            'start' => $start,
+            'end' => $end,
+            'limit' => 100,
+        ];
+
+        return $this->bfx_request($apiPathin, $bodyin);
+    }
+
     protected function get_bfx_invoice($id)
     {
+        $apiPathin = 'v2/auth/r/ext/pay/invoices';
         $body = [
             'id' => $id
         ];
-        $bodyJson = json_encode($body, JSON_UNESCAPED_SLASHES);
-
-        $headers = [
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-        ];
-        $r = $this->client->post('v2/ext/pay/invoice', [
-            'headers' => $headers,
-            'body' => $bodyJson,
-        ]);
-        $response = $r->getBody()->getContents();
-        return $response;
+        $response = $this->bfx_request($apiPathin, $body);
+        $data = json_decode($response, true);
+        return $data[0];
     }
 
     /**
@@ -561,8 +557,7 @@ invoices.', 'bfx-pay-woocommerce'),
         }
 
         $invoice_id = get_post_meta($order->id, 'bitfinex_invoice_id', true);
-        $response = $this->get_bfx_invoice($invoice_id);
-        $invoice_data = json_decode($response, true);
+        $invoice_data = $this->get_bfx_invoice($invoice_id);
 
         if ($this->debug) {
             $logger = wc_get_logger();
@@ -600,8 +595,7 @@ invoices.', 'bfx-pay-woocommerce'),
             return;
         }
 
-        $response = $this->get_bfx_invoice($invoiceId);
-        $data = json_decode($response, true);
+        $data = $this->get_bfx_invoice($invoiceId);
 
         $payment = null;
         $amount = null;
