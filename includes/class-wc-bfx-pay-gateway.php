@@ -410,8 +410,6 @@ invoices.', 'bfx-pay-woocommerce'),
         if (1 !== json_decode($res->getBody()->getContents())[0]) {
             throw new Exception(sprintf('This payment method is currently unavailable. Try again later or choose another one'));
         }
-        $apiKey = $this->apiKey;
-        $apiSecret = $this->apiSecret;
         $url = $this->get_return_url($order);
         $hook = get_site_url().'?wc-api=bitfinex';
         $totalSum = $order->get_total();
@@ -419,7 +417,7 @@ invoices.', 'bfx-pay-woocommerce'),
         $currency = $this->get_option('currency');
         $duration = $this->get_option('duration');
         $apiPath = 'v2/auth/w/ext/pay/invoice/create';
-        $nonce = (string) (time() * 1000 * 1000); // epoch in ms * 1000
+
         $body = [
             'amount' => $totalSum,
             'currency' => $currency,
@@ -440,25 +438,8 @@ invoices.', 'bfx-pay-woocommerce'),
             ],
         ];
 
-        $bodyJson = json_encode($body, JSON_UNESCAPED_SLASHES);
-        $signature = "/api/{$apiPath}{$nonce}{$bodyJson}";
-
-        $sig = hash_hmac('sha384', $signature, $apiSecret);
-
-        $headers = [
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-            'bfx-nonce' => $nonce,
-            'bfx-apikey' => $apiKey,
-            'bfx-signature' => $sig,
-        ];
-
         try {
-            $r = $this->client->post($apiPath, [
-                'headers' => $headers,
-                'body' => $bodyJson,
-            ]);
-            $response = $r->getBody()->getContents();
+            $response = $this->bfx_request($apiPath, $body);
             if ($this->debug) {
                 $logger = wc_get_logger();
                 $logger->info('CREATE INVOICE CALL >> '.wc_print_r($response, true), ['source' => 'bitfinex-pay']);
