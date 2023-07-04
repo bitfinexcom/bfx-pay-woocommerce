@@ -23,7 +23,6 @@ if (!in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get
 add_action('plugins_loaded', 'bfx_pay_woocommerce_init', 11);
 add_action('woocommerce_after_add_to_cart_form', 'bfx_pay_buy_checkout_on_archive');
 add_action('template_redirect', 'bfx_pay_addtocart_on_archives_redirect_checkout');
-add_action('wp_mail_failed', 'log_mailer_errors', 10, 1);
 
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'bfx_pay_settings_link', 10);
 add_filter('woocommerce_payment_gateways', 'bfx_pay_add_bfx_payment_gateway_woo');
