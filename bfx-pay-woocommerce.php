@@ -30,6 +30,37 @@ add_filter('plugin_row_meta', 'bfx_pay_plugin_row_meta', 10, 3);
 
 add_filter('pre_option_woocommerce_currency_pos', 'currency_position');
 
+
+// Cron
+add_filter('cron_schedules', 'bfx_pay_cron_add_fifteen_min');
+add_action( 'bfx_pay_cron_hook', 'bfx_pay_cron_exec' );
+add_action('wp', 'bfx_pay_add_cron');
+
+
+function bfx_pay_cron_add_fifteen_min($schedules)
+{
+    $schedules['bfx_pay_fifteen_min'] = [
+        'interval' => 60 * 15,
+        'display' => 'Every 15 minute',
+    ];
+
+    return $schedules;
+}
+
+function bfx_pay_cron_exec() {
+    if (class_exists('WC_Bfx_Pay_Gateway')) {
+        $instance = new WC_Bfx_Pay_Gateway();
+        $instance->cron_invoice_check();
+    }
+}
+
+function bfx_pay_add_cron() {
+    if ( ! wp_next_scheduled( 'bfx_pay_cron_hook' ) ) {
+        wp_schedule_event( time(), 'bfx_pay_fifteen_min', 'bfx_pay_cron_hook' );
+    }
+}
+
+
 function currency_position()
 {
     return 'right_space';
