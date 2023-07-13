@@ -4,7 +4,7 @@ Tags: bitcoin payments, crypto payments, bitcoin, tether token, bitfinex pay, cr
 Requires at least: 6.0
 Tested up to: 6.1.1
 Requires PHP: 7.4
-Stable tag: 2.0.2
+Stable tag: 3.0.0
 License: GPLv3
 License URI: https://github.com/bitfinexcom/bfx-pay-woocommerce/blob/main/LICENSE
 
@@ -90,6 +90,12 @@ Note: The maximum invoice amount is $ 1,000 (equivalent).
 
 
 == Changelog ==
+= 3.0.0 =
+* Adjusted payment completion to follow default behaviour of woocommerce
+* Fixed issue with cron schedule
+* Updated dependencies with security issues
+* Added safety check for invoice status on webhook calls
+
 = 2.0.2 =
 * Fixed issue with loading debug flag before initialising form fields
 
