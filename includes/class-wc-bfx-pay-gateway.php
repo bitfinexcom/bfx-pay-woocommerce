@@ -84,7 +84,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
         $baseUrl = $this->baseApiUrl;
         $this->client = new GuzzleHttp\Client([
             'base_uri' => $baseUrl,
-            'timeout' => 3.0,
+            'timeout' => 10.0,
         ]);
     }
 
@@ -105,15 +105,16 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 
     protected function format_bfx_error($error)
     {
-        $errPos = strpos($error, '["error",null,"ERR_PAY');
-        if (false !== $errPos) {
-            $bracketPos = strpos($error, ']', $errPos);
-
-            if (false !== $bracketPos) {
-                $errJson = json_decode(substr($error, $errPos, $bracketPos), true);
-
-                return 'Bitfinex invoice creation failed with reason: '.$errJson[2];
+        if ($error instanceof GuzzleHttp\Exception\ServerException) {
+            $response = $error->getResponse();
+            $responseBodyAsString = $response->getBody()->getContents();
+            $errorObj = json_decode($responseBodyAsString);
+            $errMsg = $errorObj[2];
+            if ($errMsg === 'ERR_CREATE_INVOICE: ERR_PAY_NOT_AVAILABLE_IN_COUNTRY_OR_REGION') {
+                return 'Bitfinex Pay is not available in your country or region';
             }
+
+            return 'Bitfinex invoice creation failed with reason: '.$errMsg;
         }
 
         return 'Internal server error, please try again later';
@@ -422,7 +423,7 @@ invoices.', 'bfx-pay-woocommerce'),
             }
         } catch (\Throwable $ex) {
             $error = $ex->getMessage();
-            $userError = $this->format_bfx_error($error);
+            $userError = $this->format_bfx_error($ex);
 
             $logger = wc_get_logger();
             $logger->error('CREATE INVOICE CALL >> '.$error, ['source' => 'bitfinex-pay']);
