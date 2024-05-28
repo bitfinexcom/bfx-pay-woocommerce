@@ -2,7 +2,7 @@
 Contributors: bitfinex, viganabd
 Tags: bitcoin payments, crypto payments, bitcoin, tether token, bitfinex pay, cryptocurrency pay, pay with bitcoin, ethereum payments, tether payments
 Requires at least: 6.0
-Tested up to: 6.1.1
+Tested up to: 6.5
 Requires PHP: 7.4
 Stable tag: 2.0.2
 License: GPLv3
