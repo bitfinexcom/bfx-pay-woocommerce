@@ -10,7 +10,7 @@
  * @class       WC_Bfx_Pay_Gateway
  * @extends     WC_Payment_Gateway
  *
- * @version     3.0.0
+ * @version     3.0.1
  */
 class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 {

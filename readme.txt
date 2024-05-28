@@ -90,6 +90,9 @@ Note: The maximum invoice amount is $ 1,000 (equivalent).
 
 
 == Changelog ==
+= 3.0.1 =
+* Update tested wp versions
+
 = 3.0.0 =
 * Adjusted payment completion to follow default behaviour of woocommerce
 * Fixed issue with cron schedule
