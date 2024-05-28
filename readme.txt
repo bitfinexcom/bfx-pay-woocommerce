@@ -4,7 +4,7 @@ Tags: bitcoin payments, crypto payments, bitcoin, tether token, bitfinex pay, cr
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 3.0.0
+Stable tag: 3.0.1
 License: GPLv3
 License URI: https://github.com/bitfinexcom/bfx-pay-woocommerce/blob/main/LICENSE
 
