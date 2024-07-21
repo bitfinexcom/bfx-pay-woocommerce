@@ -28,5 +28,5 @@ Allows e-commerce customers to pay for goods and services with crypto currencies
 
 ## Test Locally
 1. Run `composer install`.
-2. Create a zip archive from the project directory by excluding .git directory only.
+2. Create a zip archive by running `make build`.
 3. Follow steps 2-5 from [How to install](#how-to-install) on github section.
