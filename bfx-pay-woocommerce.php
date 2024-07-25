@@ -4,7 +4,7 @@
  * Plugin Name:       Bitfinex Pay
  * Plugin URI:        https://github.com/bitfinexcom/bfx-pay-woocommerce/
  * Description:       Allows e-commerce customers to pay for goods and services with crypto currencies. It provides a payment gateway that could be used by any e-commerce to sell their products and services as long as they have an Intermediate-verified (or higher KYC level) Merchant account on the Bitfinex platform.
- * Version:           3.0.2
+ * Version:           3.0.3
  * Author:            Bitfinex
  * Author URI:        https://www.bitfinex.com/
  * License:           GPL-3.0
@@ -30,12 +30,47 @@ add_filter('plugin_row_meta', 'bfx_pay_plugin_row_meta', 10, 3);
 
 add_filter('pre_option_woocommerce_currency_pos', 'currency_position');
 
+// Hook the custom function to the 'before_woocommerce_init' action
+add_action('before_woocommerce_init', 'declare_cart_checkout_blocks_compatibility');
+add_action( 'woocommerce_blocks_loaded', 'oawoo_register_order_approval_payment_method_type' );
 
 // Cron
 add_filter('cron_schedules', 'bfx_pay_cron_add_fifteen_min');
 add_action( 'bfx_pay_cron_hook', 'bfx_pay_cron_exec' );
 add_action('wp', 'bfx_pay_add_cron');
 
+// Start Hook for block checkout
+/**
+ * Custom function to declare compatibility with cart_checkout_blocks feature
+*/
+function declare_cart_checkout_blocks_compatibility() {
+    // Check if the required class exists
+    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+        // Declare compatibility for 'cart_checkout_blocks'
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('cart_checkout_blocks', __FILE__, true);
+    }
+}
+
+/**
+ * Custom function to register a payment method type
+ */
+function oawoo_register_order_approval_payment_method_type() {
+    // Check if the required class exists
+    if ( ! class_exists( 'Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType' ) ) {
+        return;
+    }
+    // Include the custom Blocks Checkout class
+    require_once __DIR__.'/includes/class-wc-block-bfx-pay-gateway.php';
+    // Hook the registration function to the 'woocommerce_blocks_payment_method_type_registration' action
+    add_action(
+        'woocommerce_blocks_payment_method_type_registration',
+        function( Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry $payment_method_registry ) {
+            // Register an instance of My_Custom_Gateway_Blocks
+            $payment_method_registry->register( new WC_Block_Bfx_Pay_Gateway );
+        }
+    );
+}
+// End Hook for block checkout
 
 function bfx_pay_cron_add_fifteen_min($schedules)
 {
