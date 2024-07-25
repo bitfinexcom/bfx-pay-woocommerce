@@ -45,9 +45,7 @@ add_action('wp', 'bfx_pay_add_cron');
  * Custom function to declare compatibility with cart_checkout_blocks feature
 */
 function declare_cart_checkout_blocks_compatibility() {
-    // Check if the required class exists
     if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
-        // Declare compatibility for 'cart_checkout_blocks'
         \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('cart_checkout_blocks', __FILE__, true);
     }
 }
@@ -56,17 +54,13 @@ function declare_cart_checkout_blocks_compatibility() {
  * Custom function to register a payment method type
  */
 function register_order_approval_payment_method_type() {
-    // Check if the required class exists
     if ( ! class_exists( 'Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType' ) ) {
         return;
     }
-    // Include the custom Blocks Checkout class
     require_once __DIR__.'/includes/class-wc-block-bfx-pay-gateway.php';
-    // Hook the registration function to the 'woocommerce_blocks_payment_method_type_registration' action
     add_action(
         'woocommerce_blocks_payment_method_type_registration',
         function( Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry $payment_method_registry ) {
-            // Register an instance of My_Custom_Gateway_Blocks
             $payment_method_registry->register( new WC_Block_Bfx_Pay_Gateway );
         }
     );
