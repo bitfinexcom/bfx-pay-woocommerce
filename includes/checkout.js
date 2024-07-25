@@ -1,4 +1,5 @@
-const settings = window.wc.wcSettings.getSetting( 'wc_block_bfx_pay_gateway', {} );
+const methodData = window.wc.wcSettings.getSetting( 'paymentMethodData', {} );
+const settings = methodData.bfx_payment || {};
 const label = window.wp.htmlEntities.decodeEntities( settings.title ) || window.wp.i18n.__( 'Bitfinex Pay Gateway', 'bfx_payment' );
 
 const Content = () => {

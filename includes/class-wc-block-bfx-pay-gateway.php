@@ -10,7 +10,7 @@ class WC_Block_Bfx_Pay_Gateway extends AbstractPaymentMethodType {
     }
 
     public function is_active() {
-        return true;
+        return $this->gateway->is_available();
     }
 
     public function get_payment_method_script_handles() {
