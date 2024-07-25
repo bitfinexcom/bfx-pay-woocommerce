@@ -30,9 +30,10 @@ add_filter('plugin_row_meta', 'bfx_pay_plugin_row_meta', 10, 3);
 
 add_filter('pre_option_woocommerce_currency_pos', 'currency_position');
 
-// Hook the custom function to the 'before_woocommerce_init' action
+// Start block checkout
 add_action('before_woocommerce_init', 'declare_cart_checkout_blocks_compatibility');
-add_action( 'woocommerce_blocks_loaded', 'oawoo_register_order_approval_payment_method_type' );
+add_action( 'woocommerce_blocks_loaded', 'register_order_approval_payment_method_type' );
+// End block checkout
 
 // Cron
 add_filter('cron_schedules', 'bfx_pay_cron_add_fifteen_min');
@@ -54,7 +55,7 @@ function declare_cart_checkout_blocks_compatibility() {
 /**
  * Custom function to register a payment method type
  */
-function oawoo_register_order_approval_payment_method_type() {
+function register_order_approval_payment_method_type() {
     // Check if the required class exists
     if ( ! class_exists( 'Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType' ) ) {
         return;
