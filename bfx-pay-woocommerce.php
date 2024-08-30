@@ -36,7 +36,6 @@ add_filter('cron_schedules', 'bfx_pay_cron_add_fifteen_min');
 add_action( 'bfx_pay_cron_hook', 'bfx_pay_cron_exec' );
 add_action('wp', 'bfx_pay_add_cron');
 
-
 function bfx_pay_cron_add_fifteen_min($schedules)
 {
     $schedules['bfx_pay_fifteen_min'] = [

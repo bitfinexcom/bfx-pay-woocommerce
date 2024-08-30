@@ -323,39 +323,6 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                     'MATIC' => 'MATIC - Ethereum'
                 ],
             ],
-            'currency' => [
-                'title' => __('Base fiat currency', 'bitfinex-pay'),
-                'description' => __('This is the fiat currency which is shown as base price on your
-invoices.', 'bfx-pay-woocommerce'),
-                'desc_tip' => true,
-                'type' => 'select',
-                'default' => 'USD',
-                'options' => [
-                    'USD' => 'USD',
-                    'EUR' => 'EUR',
-                    'GBP' => 'GBP',
-                    'CHF' => 'CHF',
-                    'CNY' => 'CNY',
-                    'JPY' => 'JPY',
-                    'KRW' => 'KRW',
-                    'INR' => 'INR',
-                    'HKD' => 'HKD',
-                    'AUD' => 'AUD',
-                    'TWD' => 'TWD',
-                    'BRL' => 'BRL',
-                    'RUB' => 'RUB',
-                    'IDR' => 'IDR',
-                    'MXN' => 'MXN',
-                    'PEN' => 'PEN',
-                    'UYU' => 'UYU',
-                    'VES' => 'VES',
-                    'COP' => 'COP',
-                    'ARS' => 'ARS',
-                    'AED' => 'AED',
-                    'HNL' => 'HNL',
-                    'GTQ' => 'GTQ'
-                ],
-            ],
             'duration' => [
                 'title' => __('Duration: sec', 'bitfinex-pay'),
                 'label' => __('sec', 'bitfinex-pay'),
@@ -411,7 +378,7 @@ invoices.', 'bfx-pay-woocommerce'),
         $hook = get_site_url().'?wc-api=bitfinex';
         $totalSum = $order->get_total();
         $payCurrencies = $this->get_option('pay_currencies');
-        $currency = $this->get_option('currency');
+        $currency = get_woocommerce_currency();
         $duration = $this->get_option('duration');
         $apiPath = 'v2/auth/w/ext/pay/invoice/create';
 
