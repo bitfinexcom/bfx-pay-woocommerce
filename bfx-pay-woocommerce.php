@@ -30,11 +30,42 @@ add_filter('plugin_row_meta', 'bfx_pay_plugin_row_meta', 10, 3);
 
 add_filter('pre_option_woocommerce_currency_pos', 'currency_position');
 
+// Start block checkout
+add_action('before_woocommerce_init', 'declare_cart_checkout_blocks_compatibility');
+add_action( 'woocommerce_blocks_loaded', 'register_order_approval_payment_method_type' );
+// End block checkout
 
 // Cron
 add_filter('cron_schedules', 'bfx_pay_cron_add_fifteen_min');
 add_action( 'bfx_pay_cron_hook', 'bfx_pay_cron_exec' );
 add_action('wp', 'bfx_pay_add_cron');
+
+// Start Hook for block checkout
+/**
+ * Custom function to declare compatibility with cart_checkout_blocks feature
+*/
+function declare_cart_checkout_blocks_compatibility() {
+    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('cart_checkout_blocks', __FILE__, true);
+    }
+}
+
+/**
+ * Custom function to register a payment method type
+ */
+function register_order_approval_payment_method_type() {
+    if ( ! class_exists( 'Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType' ) ) {
+        return;
+    }
+    require_once __DIR__.'/includes/class-wc-block-bfx-pay-gateway.php';
+    add_action(
+        'woocommerce_blocks_payment_method_type_registration',
+        function( Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry $payment_method_registry ) {
+            $payment_method_registry->register( new WC_Block_Bfx_Pay_Gateway );
+        }
+    );
+}
+// End Hook for block checkout
 
 function bfx_pay_cron_add_fifteen_min($schedules)
 {
