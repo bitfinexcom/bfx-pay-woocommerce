@@ -420,7 +420,7 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
 
             return [
                 'result' => 'failure',
-                'messages' => 'failed',
+                'messages' => $userError,
             ];
         }
 
