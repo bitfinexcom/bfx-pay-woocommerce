@@ -114,6 +114,14 @@ class WC_Bfx_Pay_Gateway extends WC_Payment_Gateway
                 return 'Bitfinex Pay is not available in your country or region';
             }
 
+            if ($errMsg === 'ERR_CREATE_INVOICE: ERR_PAY_CURRENCY_INVALID') {
+                return 'Bitfinex Pay does not support this currency';
+            }
+
+            if ($errMsg === 'ERR_CREATE_INVOICE: ERR_PAY_AMOUNT_INVALID') {
+                return 'Bitfinex Pay can not process order with amount less than 0.1 USD equivalent.';
+            }
+
             return 'Bitfinex invoice creation failed with reason: '.$errMsg;
         }
 
