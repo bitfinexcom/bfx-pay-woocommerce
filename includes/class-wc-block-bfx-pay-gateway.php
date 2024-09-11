@@ -27,9 +27,8 @@ class WC_Block_Bfx_Pay_Gateway extends AbstractPaymentMethodType {
             null,
             true
         );
-        if( function_exists( 'wp_set_script_translations' ) ) {            
+        if( function_exists( 'wp_set_script_translations' ) ) {
             wp_set_script_translations( 'wc_block_bfx_pay_gateway-integration');
-            
         }
         return [ 'wc_block_bfx_pay_gateway-integration' ];
     }
@@ -38,6 +37,7 @@ class WC_Block_Bfx_Pay_Gateway extends AbstractPaymentMethodType {
         return [
             'title' => $this->gateway->title,
             'description' => $this->gateway->description,
+            'icon' => $this->gateway->get_icon_uri(),
         ];
     }
 }
