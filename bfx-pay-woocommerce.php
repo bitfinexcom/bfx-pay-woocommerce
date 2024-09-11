@@ -64,6 +64,11 @@ function register_order_approval_payment_method_type() {
             $payment_method_registry->register( new WC_Block_Bfx_Pay_Gateway );
         }
     );
+    wp_enqueue_style(
+        'WC_bfx_pay_block_checkout',
+        plugin_dir_url(__FILE__) . '/includes/checkout.css',
+        array(),
+    );
 }
 // End Hook for block checkout
 
