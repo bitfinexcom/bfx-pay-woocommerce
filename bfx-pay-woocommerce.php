@@ -4,7 +4,7 @@
  * Plugin Name:       Bitfinex Pay
  * Plugin URI:        https://github.com/bitfinexcom/bfx-pay-woocommerce/
  * Description:       Allows e-commerce customers to pay for goods and services with crypto currencies. It provides a payment gateway that could be used by any e-commerce to sell their products and services as long as they have an Intermediate-verified (or higher KYC level) Merchant account on the Bitfinex platform.
- * Version:           3.2.0
+ * Version:           3.2.1
  * Author:            Bitfinex
  * Author URI:        https://www.bitfinex.com/
  * License:           GPL-3.0
@@ -27,8 +27,6 @@ add_action('template_redirect', 'bfx_pay_addtocart_on_archives_redirect_checkout
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'bfx_pay_settings_link', 10);
 add_filter('woocommerce_payment_gateways', 'bfx_pay_add_bfx_payment_gateway_woo');
 add_filter('plugin_row_meta', 'bfx_pay_plugin_row_meta', 10, 3);
-
-add_filter('pre_option_woocommerce_currency_pos', 'currency_position');
 
 // Start block checkout
 add_action('before_woocommerce_init', 'declare_cart_checkout_blocks_compatibility');
@@ -93,12 +91,6 @@ function bfx_pay_add_cron() {
     if ( ! wp_next_scheduled( 'bfx_pay_cron_hook' ) ) {
         wp_schedule_event( time(), 'bfx_pay_fifteen_min', 'bfx_pay_cron_hook' );
     }
-}
-
-
-function currency_position()
-{
-    return 'right_space';
 }
 
 function bfx_pay_settings_link($links): array
