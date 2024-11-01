@@ -4,7 +4,7 @@ Tags: bitcoin payments, crypto payments, bitcoin, tether token, bitfinex pay, cr
 Requires at least: 6.0
 Tested up to: 6.6.1
 Requires PHP: 7.4
-Stable tag: 3.2.0
+Stable tag: 3.2.1
 License: GPLv3
 License URI: https://github.com/bitfinexcom/bfx-pay-woocommerce/blob/main/LICENSE
 
@@ -90,9 +90,12 @@ Note: The maximum invoice amount is $ 1,000 (equivalent).
 
 
 == Changelog ==
+= 3.2.1 =
+* Remove hardcoded currency position
+
 = 3.2.0 =
 * Use woocommerce currency setting instead of adding a separate config for it
-* Added support for block checkout 
+* Added support for block checkout
 
 = 3.1.0 =
 * Added support for the following fiat currencies: CNY, JPY, KRW, INR, HKD, AUD, TWD, BRL, RUB, IDR, MXN, PEN, UYU, VES, COP, ARS, AED, HNL, GTQ
